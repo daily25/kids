@@ -1,15 +1,15 @@
-const CACHE_NAME = 'kids-tasks-v26';
+const CACHE_NAME = 'kids-tasks-v27';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/css/styles.css',
-    '/js/app.js',
-    '/js/storage.js',
-    '/js/components.js',
-    '/assets/olive.png',
-    '/assets/miles.png',
-    '/assets/zander.png',
-    '/manifest.json'
+    './',
+    './index.html',
+    './css/styles.css',
+    './js/app.js',
+    './js/storage.js',
+    './js/components.js',
+    './assets/olive.png',
+    './assets/miles.png',
+    './assets/zander.png',
+    './manifest.json'
 ];
 
 // Install event - cache assets
