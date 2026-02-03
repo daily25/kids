@@ -52,9 +52,6 @@ function init() {
         // Add swipe gesture support
         setupSwipeGestures();
 
-        // Check for Monday backup reminder
-        checkBackupReminder();
-
         // Initialize Firebase sync
         initFirebaseSync();
     } catch (error) {
@@ -138,18 +135,8 @@ function setupEventListeners() {
     // Settings save
     document.getElementById('saveSettingsBtn').addEventListener('click', handleSaveSettings);
 
-    // New week button
-    document.getElementById('newWeekBtn').addEventListener('click', handleNewWeek);
-
     // Update app button
     document.getElementById('updateAppBtn').addEventListener('click', handleUpdateApp);
-
-    // Data backup buttons
-    document.getElementById('exportDataBtn').addEventListener('click', handleExportData);
-    document.getElementById('importDataBtn').addEventListener('click', () => {
-        document.getElementById('importFileInput').click();
-    });
-    document.getElementById('importFileInput').addEventListener('change', handleImportData);
 
     // Handle keyboard escape
     document.addEventListener('keydown', (e) => {
