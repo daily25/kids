@@ -1636,3 +1636,75 @@ body {
 .summary-progress .progress-bar {
     height: 4px;
 }
+
+/* Backup Reminder */
+.backup-reminder-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.backup-reminder-overlay.active {
+    opacity: 1;
+}
+
+.backup-reminder {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    max-width: 320px;
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.backup-reminder-overlay.active .backup-reminder {
+    transform: scale(1);
+}
+
+.backup-reminder-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.backup-reminder-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.backup-reminder-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.backup-reminder-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 8px;
+}
+
+.btn-text:hover {
+    color: var(--text-primary);
+}

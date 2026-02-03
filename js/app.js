@@ -51,6 +51,9 @@ function init() {
 
         // Add swipe gesture support
         setupSwipeGestures();
+
+        // Check for Monday backup reminder
+        checkBackupReminder();
     } catch (error) {
         console.error('Init error:', error);
         document.getElementById('taskList').innerHTML = `
@@ -634,6 +637,81 @@ function handleImportData(e) {
 
     // Reset the input so the same file can be selected again
     e.target.value = '';
+}
+
+/**
+ * Check if we should show the Monday backup reminder
+ */
+function checkBackupReminder() {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday
+
+    // Only show on Mondays
+    if (dayOfWeek !== 1) return;
+
+    // Check if we've already shown the reminder this week
+    const lastReminderKey = 'lastBackupReminder';
+    const lastReminder = localStorage.getItem(lastReminderKey);
+    const todayStr = Storage.formatDate(today);
+
+    // If we've already reminded today or this week (same week start)
+    if (lastReminder) {
+        const lastReminderDate = new Date(lastReminder);
+        const weekStart = Storage.getWeekStart(today);
+        const lastWeekStart = Storage.getWeekStart(lastReminderDate);
+
+        // If the reminder was shown this week, don't show again
+        if (weekStart.getTime() === lastWeekStart.getTime()) {
+            return;
+        }
+    }
+
+    // Show the backup reminder after a short delay
+    setTimeout(() => {
+        showBackupReminder();
+        // Mark that we showed the reminder
+        localStorage.setItem(lastReminderKey, todayStr);
+    }, 1500);
+}
+
+/**
+ * Show the backup reminder banner
+ */
+function showBackupReminder() {
+    // Create reminder overlay
+    const reminder = document.createElement('div');
+    reminder.className = 'backup-reminder-overlay';
+    reminder.innerHTML = `
+        <div class="backup-reminder">
+            <div class="backup-reminder-icon">📦</div>
+            <div class="backup-reminder-content">
+                <div class="backup-reminder-title">Weekly Backup Reminder</div>
+                <div class="backup-reminder-text">It's Monday! Consider backing up your data to keep it safe.</div>
+            </div>
+            <div class="backup-reminder-actions">
+                <button class="btn btn-primary" id="backupNowBtn">Backup Now</button>
+                <button class="btn-text" id="backupLaterBtn">Later</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(reminder);
+
+    // Animate in
+    setTimeout(() => reminder.classList.add('active'), 10);
+
+    // Handle Backup Now button
+    document.getElementById('backupNowBtn').addEventListener('click', () => {
+        reminder.classList.remove('active');
+        setTimeout(() => reminder.remove(), 300);
+        handleExportData();
+    });
+
+    // Handle Later button
+    document.getElementById('backupLaterBtn').addEventListener('click', () => {
+        reminder.classList.remove('active');
+        setTimeout(() => reminder.remove(), 300);
+    });
 }
 
 /**
