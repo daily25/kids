@@ -328,6 +328,8 @@ function getLevelProgress(points) {
 function getLifetimePoints(data, kidId) {
     let total = 0;
     const tasks = data.kids[kidId].tasks;
+    const today = new Date();
+    const todayStr = formatDate(today);
 
     // Sum points from all completions
     Object.keys(data.completions).forEach(key => {
@@ -337,6 +339,48 @@ function getLifetimePoints(data, kidId) {
             const task = tasks.find(t => t.id === taskId);
             if (task) {
                 total += task.points;
+            }
+        }
+    });
+
+    // Calculate penalties for incomplete tasks from past days
+    // We need to find all dates where tasks were active and not completed
+    const processedDates = new Set();
+
+    // Get all dates from completions to find the range of active days
+    Object.keys(data.completions).forEach(key => {
+        if (key.startsWith(kidId + '_')) {
+            const parts = key.split('_');
+            const dateStr = parts[parts.length - 1]; // Last part is the date
+            if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                processedDates.add(dateStr);
+            }
+        }
+    });
+
+    // Also check from task creation dates to today for any missed days
+    tasks.forEach(task => {
+        if (task.createdAt) {
+            const createdDate = new Date(task.createdAt);
+            const taskActiveDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
+
+            // Iterate from creation date to yesterday
+            const checkDate = new Date(createdDate);
+            checkDate.setHours(0, 0, 0, 0);
+
+            while (formatDate(checkDate) < todayStr) {
+                const dayOfWeek = checkDate.getDay();
+                const dateStr = formatDate(checkDate);
+
+                // If task is active on this day and not completed, apply penalty
+                if (taskActiveDays.includes(dayOfWeek)) {
+                    const completionKey = getCompletionKey(kidId, task.id, checkDate);
+                    if (!data.completions[completionKey]) {
+                        total -= 1; // Penalty for incomplete task
+                    }
+                }
+
+                checkDate.setDate(checkDate.getDate() + 1);
             }
         }
     });
@@ -489,6 +533,11 @@ function getCurrentStreak(data, kidId) {
 function calculateDayPoints(data, kidId, date) {
     const tasks = data.kids[kidId].tasks;
     const dayOfWeek = new Date(date).getDay(); // 0 = Sunday, 6 = Saturday
+    const checkDate = new Date(date);
+    const today = new Date();
+
+    // Check if this date is in the past (day is over)
+    const isPastDay = formatDate(checkDate) < formatDate(today);
 
     let earned = 0;
     let possible = 0;
@@ -512,6 +561,9 @@ function calculateDayPoints(data, kidId, date) {
         possible += task.points;
         if (isTaskCompleted(data, kidId, task.id, date)) {
             earned += task.points;
+        } else if (isPastDay) {
+            // Penalty: -1 point for each incomplete task from past days
+            earned -= 1;
         }
     });
 
