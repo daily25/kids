@@ -589,9 +589,11 @@ function openDayViewModal(date) {
     const title = isToday ? "Today's Tasks" : date.toLocaleDateString('en-US', options);
     document.getElementById('dayViewTitle').textContent = title;
 
-    // Get all kids' tasks for this date
+    // Get tasks for this date
+    // If viewing a specific kid's tasks, only show that kid
+    // If on dashboard, show all kids
     const content = document.getElementById('dayViewContent');
-    const kids = ['olive', 'miles', 'zander'];
+    const kids = currentView === 'tasks' ? [currentKid] : ['olive', 'miles', 'zander'];
 
     let html = `
         <div class="day-view-summary">

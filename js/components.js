@@ -82,7 +82,6 @@ function renderDayHeaders(container) {
     const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
     container.innerHTML = `
-        <span class="day-spacer"></span>
         <div class="days-container">
             ${days.map(date => {
         const isToday = Storage.formatDate(date) === Storage.formatDate(today);
