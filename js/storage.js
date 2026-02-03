@@ -114,13 +114,30 @@ function loadData() {
 }
 
 /**
- * Save data to LocalStorage
+ * Save data to LocalStorage and sync to cloud
  */
 function saveData(data) {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+        // Sync to Firebase if available
+        if (typeof FirebaseSync !== 'undefined' && FirebaseSync.isConnected()) {
+            FirebaseSync.syncToCloud(data);
+        }
     } catch (e) {
         console.error('Error saving data:', e);
+    }
+}
+
+/**
+ * Save data to LocalStorage only (no cloud sync)
+ * Used when receiving data from cloud to prevent sync loops
+ */
+function saveDataLocal(data) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+        console.error('Error saving data locally:', e);
     }
 }
 
@@ -759,5 +776,6 @@ window.Storage = {
     calculateLevel,
     getLevelProgress,
     getLifetimePoints,
-    isPerfectDay
+    isPerfectDay,
+    saveDataLocal
 };

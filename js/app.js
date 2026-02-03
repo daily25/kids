@@ -54,6 +54,9 @@ function init() {
 
         // Check for Monday backup reminder
         checkBackupReminder();
+
+        // Initialize Firebase sync
+        initFirebaseSync();
     } catch (error) {
         console.error('Init error:', error);
         document.getElementById('taskList').innerHTML = `
@@ -712,6 +715,92 @@ function showBackupReminder() {
         reminder.classList.remove('active');
         setTimeout(() => reminder.remove(), 300);
     });
+}
+
+/**
+ * Initialize Firebase sync
+ */
+function initFirebaseSync() {
+    if (typeof FirebaseSync === 'undefined') {
+        console.log('FirebaseSync not available');
+        updateSyncIndicator('offline');
+        return;
+    }
+
+    // Initialize with callback for remote changes
+    const success = FirebaseSync.init((remoteData) => {
+        console.log('Remote data received, updating local');
+
+        // Update local storage with remote data
+        appData = remoteData;
+        Storage.saveDataLocal(appData); // Save locally without triggering sync back
+
+        // Refresh the UI
+        renderCurrentView();
+        Components.updateNavMoney(appData);
+
+        // Show a subtle notification
+        showSyncNotification('Data synced from cloud');
+    });
+
+    updateSyncIndicator(success ? 'connected' : 'offline');
+
+    // If connected, do an initial sync to push local data
+    if (success) {
+        // Load from cloud first to check if there's existing data
+        FirebaseSync.loadFromCloud().then((cloudData) => {
+            if (cloudData && cloudData._lastUpdated) {
+                // Cloud has data - merge or use cloud data
+                console.log('Cloud data found, syncing');
+                appData = cloudData;
+                Storage.saveDataLocal(appData);
+                renderCurrentView();
+                Components.updateNavMoney(appData);
+            } else {
+                // No cloud data - push local data
+                console.log('No cloud data, pushing local');
+                FirebaseSync.syncToCloud(appData);
+            }
+        });
+    }
+}
+
+/**
+ * Update the sync status indicator
+ */
+function updateSyncIndicator(status) {
+    let indicator = document.querySelector('.sync-indicator');
+
+    if (!indicator) {
+        // Create the indicator
+        indicator = document.createElement('div');
+        indicator.className = 'sync-indicator';
+        document.querySelector('.app-header').appendChild(indicator);
+    }
+
+    indicator.className = 'sync-indicator ' + status;
+    indicator.title = status === 'connected' ? 'Cloud sync active' : 'Offline mode';
+    indicator.innerHTML = status === 'connected' ? '☁️' : '📴';
+}
+
+/**
+ * Show a brief sync notification
+ */
+function showSyncNotification(message) {
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = 'sync-notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    // Animate in
+    setTimeout(() => notification.classList.add('active'), 10);
+
+    // Remove after delay
+    setTimeout(() => {
+        notification.classList.remove('active');
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
 }
 
 /**

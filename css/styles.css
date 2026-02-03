@@ -1708,3 +1708,41 @@ body {
 .btn-text:hover {
     color: var(--text-primary);
 }
+
+/* Sync Indicator */
+.sync-indicator {
+    font-size: 0.9rem;
+    margin-left: 8px;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.sync-indicator.connected {
+    opacity: 1;
+}
+
+.sync-indicator.offline {
+    opacity: 0.4;
+}
+
+/* Sync Notification Toast */
+.sync-notification {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 999;
+}
+
+.sync-notification.active {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
