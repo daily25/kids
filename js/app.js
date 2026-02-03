@@ -138,6 +138,13 @@ function setupEventListeners() {
     // Update app button
     document.getElementById('updateAppBtn').addEventListener('click', handleUpdateApp);
 
+    // Data backup buttons
+    document.getElementById('exportDataBtn').addEventListener('click', handleExportData);
+    document.getElementById('importDataBtn').addEventListener('click', () => {
+        document.getElementById('importFileInput').click();
+    });
+    document.getElementById('importFileInput').addEventListener('change', handleImportData);
+
     // Handle keyboard escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -549,6 +556,84 @@ async function handleUpdateApp() {
             btn.textContent = originalText;
         }, 2000);
     }
+}
+
+/**
+ * Handle export data - download all data as JSON file
+ */
+function handleExportData() {
+    try {
+        const dataStr = JSON.stringify(appData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+        // Create download link
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        // Create filename with date
+        const date = new Date();
+        const dateStr = date.toISOString().split('T')[0];
+        link.download = `kids-tasks-backup-${dateStr}.json`;
+
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert('✅ Data exported successfully!');
+    } catch (error) {
+        console.error('Export failed:', error);
+        alert('❌ Export failed: ' + error.message);
+    }
+}
+
+/**
+ * Handle import data - restore from JSON file
+ */
+function handleImportData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+        try {
+            const importedData = JSON.parse(event.target.result);
+
+            // Validate the data structure
+            if (!importedData.kids || !importedData.settings) {
+                throw new Error('Invalid backup file - missing required data');
+            }
+
+            // Confirm before overwriting
+            if (confirm('⚠️ This will replace ALL current data with the backup. Are you sure?')) {
+                // Save the imported data
+                Storage.saveData(importedData);
+                appData = importedData;
+
+                // Refresh the app
+                renderCurrentView();
+                Components.updateNavMoney(appData);
+                closeSettingsModal();
+
+                alert('✅ Data imported successfully!');
+            }
+        } catch (error) {
+            console.error('Import failed:', error);
+            alert('❌ Import failed: ' + error.message);
+        }
+    };
+
+    reader.onerror = function () {
+        alert('❌ Could not read the file');
+    };
+
+    reader.readAsText(file);
+
+    // Reset the input so the same file can be selected again
+    e.target.value = '';
 }
 
 /**

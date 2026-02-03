@@ -30,7 +30,7 @@
                 </svg>
             </button>
             <h1 class="app-title" id="homeBtn" style="cursor:pointer"><span class="title-accent">Kids</span>Tasks</h1>
-            <span class="app-version">v0.25</span>
+            <span class="app-version">v0.26</span>
             <div class="header-right">
                 <button class="header-btn" id="bonusPointsBtn" aria-label="Add/Remove Points" title="Add/Remove Points">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -225,6 +225,16 @@
                     <h3>Week Management</h3>
                     <button class="btn btn-warning" id="newWeekBtn">Start New Week</button>
                     <p class="settings-hint">This will reset all task completions for the current week.</p>
+                </div>
+                <div class="settings-section">
+                    <h3>Data Backup</h3>
+                    <div class="backup-buttons">
+                        <button class="btn btn-primary" id="exportDataBtn">📥 Export Data</button>
+                        <button class="btn btn-primary" id="importDataBtn">📤 Import Data</button>
+                    </div>
+                    <input type="file" id="importFileInput" accept=".json" style="display:none">
+                    <p class="settings-hint">Export saves all tasks, completions, and points to a file. Import restores
+                        from a backup.</p>
                 </div>
                 <div class="settings-section">
                     <h3>App Updates</h3>
