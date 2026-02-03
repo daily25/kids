@@ -1340,8 +1340,8 @@ body {
 }
 
 .summary-avatar {
-    width: 56px;
-    height: 56px;
+    width: 84px;
+    height: 84px;
     border-radius: var(--radius-full);
     object-fit: cover;
     margin-bottom: 8px;
