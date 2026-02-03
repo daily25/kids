@@ -123,49 +123,42 @@ function renderEmptyState() {
 }
 
 /**
- * Render leaderboard/dashboard view
+ * Render dashboard view (without leaderboard, with recent adjustments)
  */
 function renderDashboard(data, container) {
     const leaderboard = Storage.getLeaderboard(data);
-    const weekNum = Storage.getWeekNumber(new Date());
+    const adjustments = Storage.getPointsAdjustments(data, null, 10);
+
+    // Build recent adjustments HTML
+    let adjustmentsHtml = '';
+    if (adjustments.length > 0) {
+        adjustmentsHtml = `
+            <div class="dashboard-adjustments">
+                <h3>📝 Recent Point Adjustments</h3>
+                <div class="adjustments-list">
+                    ${adjustments.map(adj => {
+            const kid = data.kids[adj.kidId];
+            const dateObj = new Date(adj.date);
+            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const sign = adj.type === 'bonus' ? '+' : '-';
+            return `
+                            <div class="adjustment-item">
+                                <img src="${kid.avatar}" alt="${kid.name}" class="adjustment-avatar">
+                                <div class="adjustment-info">
+                                    <div class="adjustment-reason">${escapeHtml(adj.reason)}</div>
+                                    <div class="adjustment-meta">${kid.name} • ${dateStr}</div>
+                                </div>
+                                <div class="adjustment-amount ${adj.type}">${sign}${adj.amount}</div>
+                            </div>
+                        `;
+        }).join('')}
+                </div>
+            </div>
+        `;
+    }
 
     container.innerHTML = `
         <div class="dashboard">
-            <div class="dashboard-header">
-                <h2 class="dashboard-title">🏆 Week ${weekNum} Leaderboard</h2>
-            </div>
-            
-            <div class="leaderboard">
-                ${leaderboard.map((kid, index) => `
-                    <div class="leaderboard-item ${index === 0 ? 'leader' : ''}" data-kid="${kid.id}">
-                        <div class="leaderboard-rank">${index === 0 ? '👑' : index + 1}</div>
-                        <img src="${kid.avatar}" alt="${kid.name}" class="leaderboard-avatar">
-                        <div class="leaderboard-info">
-                            <div class="leaderboard-name">${kid.name}</div>
-                            <div class="leaderboard-stats">
-                                <span class="stat-money">$${kid.money.toFixed(2)}</span>
-                                <span class="stat-level">⭐ Lv.${kid.level.level}</span>
-                                ${kid.streak > 0 ? `<span class="stat-streak">🔥${kid.streak}</span>` : ''}
-                            </div>
-                            <div class="leaderboard-stats-secondary">
-                                <span class="stat-points">${kid.earnedPoints}/${kid.possiblePoints} pts</span>
-                            </div>
-                            <div class="leaderboard-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${kid.percentage}%; background: ${getProgressColor(kid.percentage)};"></div>
-                                </div>
-                                <span class="progress-text">${kid.percentage}%</span>
-                            </div>
-                        </div>
-                        <div class="leaderboard-badges">
-                            ${kid.badges.slice(0, 3).map(badge =>
-        `<span class="badge-mini" title="${badge.name}: ${badge.count}">${badge.icon}</span>`
-    ).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-            
             <div class="dashboard-summary">
                 <h3>📊 This Week's Summary</h3>
                 <div class="summary-cards">
@@ -175,6 +168,16 @@ function renderDashboard(data, container) {
                             <div class="summary-name">${kid.name}</div>
                             <div class="summary-money">$${kid.money.toFixed(2)}</div>
                             <div class="summary-max">of $${kid.maxMoney}</div>
+                            <div class="summary-stats">
+                                <span class="stat-level">⭐ Lv.${kid.level.level}</span>
+                                ${kid.streak > 0 ? `<span class="stat-streak">🔥${kid.streak}</span>` : ''}
+                            </div>
+                            <div class="summary-points">${kid.earnedPoints}/${kid.possiblePoints} pts (${kid.percentage}%)</div>
+                            <div class="summary-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${kid.percentage}%; background: ${getProgressColor(kid.percentage)};"></div>
+                                </div>
+                            </div>
                             ${kid.badges.length > 0 ? `
                                 <div class="summary-badges">
                                     ${kid.badges.map(b => `<span title="${b.name}: ${b.count}x">${b.icon}</span>`).join('')}
@@ -184,6 +187,8 @@ function renderDashboard(data, container) {
                     `).join('')}
                 </div>
             </div>
+            
+            ${adjustmentsHtml}
         </div>
     `;
 }

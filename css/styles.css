@@ -1536,3 +1536,94 @@ body {
         transform: translateY(-15px);
     }
 }
+
+/* Dashboard Adjustments Section */
+.dashboard-adjustments {
+    margin-top: 24px;
+}
+
+.dashboard-adjustments h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+}
+
+.adjustments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.adjustment-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.adjustment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.adjustment-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.adjustment-reason {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.adjustment-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.adjustment-amount {
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.adjustment-amount.bonus {
+    color: var(--color-green);
+}
+
+.adjustment-amount.penalty {
+    color: var(--color-red);
+}
+
+/* Enhanced Summary Cards */
+.summary-stats {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 4px;
+    font-size: 0.75rem;
+}
+
+.summary-points {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.summary-progress {
+    margin-top: 6px;
+}
+
+.summary-progress .progress-bar {
+    height: 4px;
+}

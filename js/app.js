@@ -135,6 +135,9 @@ function setupEventListeners() {
     // New week button
     document.getElementById('newWeekBtn').addEventListener('click', handleNewWeek);
 
+    // Update app button
+    document.getElementById('updateAppBtn').addEventListener('click', handleUpdateApp);
+
     // Handle keyboard escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -504,6 +507,47 @@ function handleNewWeek() {
         renderCurrentView();
         Components.updateNavMoney(appData);
         Components.updateWeekInfo();
+    }
+}
+
+/**
+ * Handle update app - force refresh service worker and reload
+ */
+async function handleUpdateApp() {
+    const btn = document.getElementById('updateAppBtn');
+    const originalText = btn.textContent;
+    btn.textContent = '⏳ Updating...';
+    btn.disabled = true;
+
+    try {
+        // Unregister all service workers
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+            }
+        }
+
+        // Clear all caches
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            for (const cacheName of cacheNames) {
+                await caches.delete(cacheName);
+            }
+        }
+
+        // Reload the page to get fresh files
+        btn.textContent = '✓ Updated! Reloading...';
+        setTimeout(() => {
+            window.location.reload(true);
+        }, 500);
+    } catch (error) {
+        console.error('Update failed:', error);
+        btn.textContent = '❌ Update failed';
+        btn.disabled = false;
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
     }
 }
 
