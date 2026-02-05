@@ -49,8 +49,6 @@ function init() {
         Components.updateNavMoney(appData);
         console.log('Init complete');
 
-        // Add swipe gesture support
-        setupSwipeGestures();
 
         // Initialize Firebase sync
         initFirebaseSync();
@@ -624,61 +622,6 @@ function showSyncNotification(message) {
     }, 2000);
 }
 
-/**
- * Setup swipe gestures for navigation
- */
-function setupSwipeGestures() {
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    const kids = ['olive', 'miles', 'zander'];
-
-    taskList.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    taskList.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-    }, { passive: true });
-
-    function handleSwipe() {
-        const diff = touchStartX - touchEndX;
-        const threshold = 50; // Lower threshold for better mobile response
-
-        if (Math.abs(diff) < threshold) return;
-
-        // If on dashboard, swipe left goes to first kid
-        if (currentView === 'dashboard') {
-            if (diff > 0) {
-                switchToKid(kids[0]);
-                renderCurrentView();
-                Components.updateNavMoney(appData);
-            }
-            return;
-        }
-
-        const currentIndex = kids.indexOf(currentKid);
-
-        if (diff > 0 && currentIndex < kids.length - 1) {
-            // Swipe left - next kid
-            switchToKid(kids[currentIndex + 1]);
-            renderCurrentView();
-            Components.updateNavMoney(appData);
-        } else if (diff < 0 && currentIndex > 0) {
-            // Swipe right - previous kid
-            switchToKid(kids[currentIndex - 1]);
-            renderCurrentView();
-            Components.updateNavMoney(appData);
-        } else if (diff < 0 && currentIndex === 0) {
-            // Swipe right from first kid - go to dashboard
-            currentView = 'dashboard';
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            renderCurrentView();
-            Components.updateNavMoney(appData);
-        }
-    }
-}
 
 /**
  * Handle day header click - open day view modal
