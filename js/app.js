@@ -479,20 +479,28 @@ function openSettingsModal() {
     document.getElementById('milesAllowance').value = appData.settings.allowances.miles;
     document.getElementById('zanderAllowance').value = appData.settings.allowances.zander;
 
-    // Populate task sound dropdown with unique tasks
+    // Populate task sound dropdown with unique tasks (by name)
     const soundSelect = document.getElementById('soundTaskSelect');
     soundSelect.innerHTML = '<option value="">Choose a task...</option>';
     const allTasks = new Map();
     ['olive', 'miles', 'zander'].forEach(kidId => {
-        appData.kids[kidId].tasks.forEach(task => {
-            if (!allTasks.has(task.id)) {
-                allTasks.set(task.id, task);
-            }
-        });
+        const kid = appData.kids[kidId];
+        if (kid && kid.tasks && Array.isArray(kid.tasks)) {
+            kid.tasks.forEach(task => {
+                // Use task name as key since IDs may differ across devices
+                if (task.name && !allTasks.has(task.name)) {
+                    allTasks.set(task.name, task);
+                }
+            });
+        }
     });
-    allTasks.forEach((task, id) => {
-        const hasSound = appData.settings.taskSounds?.[id] ? ' ✓' : '';
-        soundSelect.innerHTML += `<option value="${id}">${task.icon} ${task.name}${hasSound}</option>`;
+    console.log('Tasks found for sound dropdown:', allTasks.size);
+    allTasks.forEach((task, name) => {
+        const hasSound = appData.settings.taskSounds?.[name] ? ' ✓' : '';
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = `${task.icon} ${task.name}${hasSound}`;
+        soundSelect.appendChild(option);
     });
 
     // Set sounds enabled toggle
@@ -528,15 +536,27 @@ function handleSaveSettings() {
 function playTaskSound(taskId) {
     if (appData.settings.soundsEnabled === false) return;
 
-    const soundData = appData.settings.taskSounds?.[taskId];
+    // Find task name from taskId (sounds are stored by name for cross-device sync)
+    let taskName = null;
+    ['olive', 'miles', 'zander'].forEach(kidId => {
+        const kid = appData.kids[kidId];
+        if (kid && kid.tasks) {
+            const task = kid.tasks.find(t => t.id === taskId);
+            if (task) taskName = task.name;
+        }
+    });
+
+    if (!taskName) return;
+
+    const soundData = appData.settings.taskSounds?.[taskName];
     if (!soundData) return;
 
     try {
-        if (!taskAudioCache[taskId]) {
-            taskAudioCache[taskId] = new Audio(soundData);
+        if (!taskAudioCache[taskName]) {
+            taskAudioCache[taskName] = new Audio(soundData);
         }
-        taskAudioCache[taskId].currentTime = 0;
-        taskAudioCache[taskId].play().catch(() => { }); // Ignore autoplay errors
+        taskAudioCache[taskName].currentTime = 0;
+        taskAudioCache[taskName].play().catch(() => { }); // Ignore autoplay errors
     } catch (e) {
         console.warn('Sound playback failed:', e);
     }

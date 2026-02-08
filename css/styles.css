@@ -334,10 +334,11 @@ body {
 
 /* Dot Matrix Grid */
 .dot-matrix {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 8px);
-    gap: 3px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
     padding: 8px 0;
+    overflow: hidden;
 }
 
 .dot {
@@ -345,6 +346,7 @@ body {
     height: 8px;
     border-radius: 2px;
     transition: all var(--transition-fast);
+    flex-shrink: 0;
 }
 
 .dot.completed {
