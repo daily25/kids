@@ -879,22 +879,23 @@ body {
 
 /* Avatar-only variant for points modal */
 .kid-selector.avatar-only {
-    gap: 16px;
+    gap: 20px;
     justify-content: center;
 }
 
 .kid-selector.avatar-only .kid-checkbox {
     background: transparent;
     border: none;
-    padding: 4px;
+    padding: 0;
     flex: 0;
 }
 
 .kid-selector.avatar-only .kid-checkbox-avatar {
-    width: 60px;
-    height: 60px;
-    border: 3px solid transparent;
+    width: 70px;
+    height: 70px;
+    border: none;
     transition: all var(--transition-fast);
+    opacity: 0.6;
 }
 
 .kid-selector.avatar-only .kid-checkbox:has(input:checked) {
@@ -902,12 +903,13 @@ body {
 }
 
 .kid-selector.avatar-only .kid-checkbox:has(input:checked) .kid-checkbox-avatar {
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 12px var(--accent-primary);
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .kid-selector.avatar-only .kid-checkbox:hover .kid-checkbox-avatar {
-    transform: scale(1.08);
+    opacity: 0.9;
+    transform: scale(1.05);
 }
 
 /* Day View Modal */
