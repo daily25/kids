@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kids-tasks-v40';
+const CACHE_NAME = 'kids-tasks-v41';
 const urlsToCache = [
     './',
     './index.html',
@@ -12,7 +12,8 @@ const urlsToCache = [
     './assets/olive.png',
     './assets/miles.png',
     './assets/zander.png',
-    './manifest.json'
+    './manifest.json',
+    './manifest-kids.json'
 ];
 
 // Install event - cache assets
