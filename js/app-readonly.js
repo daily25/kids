@@ -405,8 +405,8 @@ function initFirebaseSync() {
         return;
     }
 
-    // Listen for remote changes only
-    FirebaseSync.onDataChange((remoteData) => {
+    // Initialize Firebase with callback for remote changes
+    const initialized = FirebaseSync.init((remoteData) => {
         console.log('Remote data received');
         appData = Storage.mergeData(appData, remoteData);
         Storage.saveData(appData, false); // Save locally but don't push
@@ -415,7 +415,11 @@ function initFirebaseSync() {
         updateSyncIndicator('synced');
     });
 
-    updateSyncIndicator('synced');
+    if (initialized) {
+        updateSyncIndicator('synced');
+    } else {
+        updateSyncIndicator('offline');
+    }
 }
 
 /**
