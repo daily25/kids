@@ -343,24 +343,38 @@ function renderTasks() {
  */
 function initFirebaseSync() {
     if (typeof FirebaseSync === 'undefined') {
-        console.log('Firebase not available');
+        console.log('FirebaseSync not available');
+        updateSyncIndicator('offline');
         return;
     }
 
-    // Initialize Firebase with callback for remote changes
-    const initialized = FirebaseSync.init((remoteData) => {
-        console.log('Remote data received');
-        appData = Storage.mergeData(appData, remoteData);
-        Storage.saveData(appData, false); // Save locally but don't push
+    // Initialize with callback for remote changes
+    const success = FirebaseSync.init((remoteData) => {
+        console.log('Remote data received, updating local');
+
+        // Update local data with remote data
+        appData = remoteData;
+        Storage.saveDataLocal(appData); // Save locally without triggering sync back
+
+        // Refresh the UI
         renderCurrentView();
         updateNavMoney(appData);
         updateSyncIndicator('synced');
     });
 
-    if (initialized) {
-        updateSyncIndicator('synced');
-    } else {
-        updateSyncIndicator('offline');
+    updateSyncIndicator(success ? 'synced' : 'offline');
+
+    // If connected, load data from cloud
+    if (success) {
+        FirebaseSync.loadFromCloud().then((cloudData) => {
+            if (cloudData && cloudData._lastUpdated) {
+                console.log('Cloud data found, syncing');
+                appData = cloudData;
+                Storage.saveDataLocal(appData);
+                renderCurrentView();
+                updateNavMoney(appData);
+            }
+        });
     }
 }
 
