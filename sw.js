@@ -1,11 +1,14 @@
-const CACHE_NAME = 'kids-tasks-v39';
+const CACHE_NAME = 'kids-tasks-v40';
 const urlsToCache = [
     './',
     './index.html',
+    './kids-view.html',
     './css/styles.css',
     './js/app.js',
+    './js/app-readonly.js',
     './js/storage.js',
     './js/components.js',
+    './js/firebase.js',
     './assets/olive.png',
     './assets/miles.png',
     './assets/zander.png',
