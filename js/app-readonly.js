@@ -13,6 +13,17 @@ const taskList = document.getElementById('taskList');
 const bottomNav = document.getElementById('bottomNav');
 
 /**
+ * Get local date string in YYYY-MM-DD format
+ */
+function getLocalDateString(date = new Date()) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
  * Initialize the app
  */
 function init() {
@@ -110,7 +121,7 @@ function renderCurrentView() {
  */
 function renderDashboard() {
     const kids = ['olive', 'miles', 'zander'];
-    const today = Components.getLocalDateString();
+    const today = getLocalDateString();
     const dayOfWeek = new Date().getDay();
     const currentWeek = Components.getWeekNumber(new Date());
 
@@ -181,7 +192,7 @@ function renderTasks() {
     const today = new Date();
     const dayOfWeek = today.getDay();
     const currentWeek = Components.getWeekNumber(today);
-    const todayStr = Components.getLocalDateString();
+    const todayStr = getLocalDateString();
 
     // Calculate stats
     const stats = Components.calculateKidStats(appData, currentKid, currentWeek);
