@@ -241,6 +241,8 @@
                         <input type="file" id="soundFileInput" accept=".mp3,.wav,audio/mpeg,audio/wav">
                     </div>
                     <button class="btn btn-primary" id="uploadSoundBtn" style="width: 100%;">Upload Sound</button>
+                    <button class="btn btn-secondary" id="removeSoundBtn"
+                        style="width: 100%; margin-top: 8px; display: none;">Remove Sound</button>
                     <p class="settings-hint">Sounds sync to cloud so both devices can hear them (max 500KB).</p>
                 </div>
                 <div class="settings-section">
@@ -324,7 +326,11 @@
 
             <!-- Recent adjustments log -->
             <div class="points-log" id="pointsLog">
-                <h3>Recent Adjustments</h3>
+                <h3>This Week's Bonus Points</h3>
+                <div class="weekly-bonus-totals" id="weeklyBonusTotals">
+                    <!-- Will be populated by JS -->
+                </div>
+                <h3 style="margin-top: 16px;">Recent Adjustments</h3>
                 <div class="points-log-list" id="pointsLogList">
                     <!-- Will be populated by JS -->
                 </div>

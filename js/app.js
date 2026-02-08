@@ -139,7 +139,9 @@ function setupEventListeners() {
 
     // Sound settings
     document.getElementById('uploadSoundBtn').addEventListener('click', handleSoundUpload);
+    document.getElementById('removeSoundBtn').addEventListener('click', handleRemoveSound);
     document.getElementById('soundsEnabled').addEventListener('change', handleSoundsToggle);
+    document.getElementById('soundTaskSelect').addEventListener('change', handleSoundTaskChange);
 
     // Handle keyboard escape
     document.addEventListener('keydown', (e) => {
@@ -613,6 +615,48 @@ async function handleSoundUpload() {
 }
 
 /**
+ * Handle task selection change for sounds - show/hide remove button
+ */
+function handleSoundTaskChange() {
+    const selectEl = document.getElementById('soundTaskSelect');
+    const removeBtn = document.getElementById('removeSoundBtn');
+    const taskName = selectEl.value;
+
+    if (taskName && appData.settings.taskSounds?.[taskName]) {
+        removeBtn.style.display = 'block';
+    } else {
+        removeBtn.style.display = 'none';
+    }
+}
+
+/**
+ * Handle remove sound from task
+ */
+function handleRemoveSound() {
+    const selectEl = document.getElementById('soundTaskSelect');
+    const taskName = selectEl.value;
+
+    if (!taskName) {
+        alert('Please select a task first');
+        return;
+    }
+
+    if (!appData.settings.taskSounds?.[taskName]) {
+        alert('This task has no sound to remove');
+        return;
+    }
+
+    if (confirm(`Remove sound from "${taskName}"?`)) {
+        delete appData.settings.taskSounds[taskName];
+        delete taskAudioCache[taskName];
+        Storage.saveData(appData);
+
+        // Refresh modal to update dropdown and hide remove button
+        openSettingsModal();
+    }
+}
+
+/**
  * Handle update app - force refresh service worker and reload
  */
 async function handleUpdateApp() {
@@ -928,6 +972,24 @@ function handlePointsSubmit(e) {
  * Render points adjustment log
  */
 function renderPointsLog() {
+    // Render weekly bonus totals per kid
+    const totalsContainer = document.getElementById('weeklyBonusTotals');
+    if (totalsContainer) {
+        totalsContainer.innerHTML = ['olive', 'miles', 'zander'].map(kidId => {
+            const kid = appData.kids[kidId];
+            const bonus = Storage.getWeeklyBonusPoints(appData, kidId);
+            const sign = bonus > 0 ? '+' : '';
+            const colorClass = bonus > 0 ? 'positive' : (bonus < 0 ? 'negative' : 'zero');
+            return `
+                <div class="bonus-total-item">
+                    <img src="${kid.avatar}" alt="${kid.name}">
+                    <div class="name">${kid.name}</div>
+                    <div class="points ${colorClass}">${sign}${bonus}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
     const logList = document.getElementById('pointsLogList');
     const adjustments = Storage.getPointsAdjustments(appData, null, 10);
 

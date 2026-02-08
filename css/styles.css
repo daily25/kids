@@ -670,8 +670,8 @@ body {
     position: relative;
     width: 52px;
     height: 28px;
-    background: #444;
-    border: 2px solid #666;
+    background: #333;
+    border: 2px solid #888;
     border-radius: var(--radius-full);
     transition: all var(--transition-fast);
     flex-shrink: 0;
@@ -684,7 +684,7 @@ body {
     left: 2px;
     width: 20px;
     height: 20px;
-    background: #888;
+    background: #666;
     border-radius: var(--radius-full);
     transition: all var(--transition-fast);
 }
@@ -827,20 +827,29 @@ body {
 /* Kid Selector in Task Modal */
 .kid-selector {
     display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.kid-selector.single-select {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
 }
 
 .kid-checkbox {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
+    gap: 4px;
+    padding: 8px 10px;
     background: var(--bg-tertiary);
     border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--transition-fast);
     border: 2px solid transparent;
+    flex: 1;
+    min-width: 0;
 }
 
 .kid-checkbox:hover {
@@ -1764,4 +1773,49 @@ body {
 .sync-notification.active {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+}
+
+/* Weekly Bonus Totals */
+.weekly-bonus-totals {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.bonus-total-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.bonus-total-item img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-bottom: 4px;
+}
+
+.bonus-total-item .name {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.bonus-total-item .points {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.bonus-total-item .points.positive {
+    color: var(--color-green);
+}
+
+.bonus-total-item .points.negative {
+    color: var(--color-red);
+}
+
+.bonus-total-item .points.zero {
+    color: var(--text-muted);
 }
