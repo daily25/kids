@@ -7,6 +7,8 @@ const STORAGE_KEY = 'kidsTasksData';
 // Default data structure
 const defaultData = {
     settings: {
+        soundsEnabled: true,  // Toggle for task completion sounds
+        taskSounds: {},       // Format: { 'taskId': 'base64_encoded_audio' }
         allowances: {
             olive: 50,
             miles: 30,

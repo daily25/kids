@@ -7,7 +7,7 @@
  */
 function renderTaskCard(task, kidId, data, onToggle, onEdit) {
     const today = new Date();
-    const days = Storage.getLastNDays(28); // Show last 4 weeks
+    const days = Storage.getLastNDays(25); // Show last 25 days (reduced from 28 for better fit)
 
     const card = document.createElement('div');
     card.className = 'task-card';

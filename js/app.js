@@ -7,6 +7,7 @@ let appData = null;
 let currentKid = 'olive';
 let currentView = 'dashboard'; // 'tasks' or 'dashboard' - start on dashboard
 let editingTask = null;
+const taskAudioCache = {}; // Cache of Audio objects per task for sound playback
 
 // DOM Elements
 const taskList = document.getElementById('taskList');
@@ -135,6 +136,10 @@ function setupEventListeners() {
 
     // Update app button
     document.getElementById('updateAppBtn').addEventListener('click', handleUpdateApp);
+
+    // Sound settings
+    document.getElementById('uploadSoundBtn').addEventListener('click', handleSoundUpload);
+    document.getElementById('soundsEnabled').addEventListener('change', handleSoundsToggle);
 
     // Handle keyboard escape
     document.addEventListener('keydown', (e) => {
@@ -294,6 +299,9 @@ function handleToggleTask(taskId) {
     const wasPerfect = Storage.isPerfectDay(appData, currentKid, today);
 
     Storage.toggleTaskCompletion(appData, currentKid, taskId, today);
+
+    // Play task sound if enabled
+    playTaskSound(taskId);
 
     // Check if now a perfect day after toggle
     const isPerfect = Storage.isPerfectDay(appData, currentKid, today);
@@ -471,6 +479,25 @@ function openSettingsModal() {
     document.getElementById('milesAllowance').value = appData.settings.allowances.miles;
     document.getElementById('zanderAllowance').value = appData.settings.allowances.zander;
 
+    // Populate task sound dropdown with unique tasks
+    const soundSelect = document.getElementById('soundTaskSelect');
+    soundSelect.innerHTML = '<option value="">Choose a task...</option>';
+    const allTasks = new Map();
+    ['olive', 'miles', 'zander'].forEach(kidId => {
+        appData.kids[kidId].tasks.forEach(task => {
+            if (!allTasks.has(task.id)) {
+                allTasks.set(task.id, task);
+            }
+        });
+    });
+    allTasks.forEach((task, id) => {
+        const hasSound = appData.settings.taskSounds?.[id] ? ' ✓' : '';
+        soundSelect.innerHTML += `<option value="${id}">${task.icon} ${task.name}${hasSound}</option>`;
+    });
+
+    // Set sounds enabled toggle
+    document.getElementById('soundsEnabled').checked = appData.settings.soundsEnabled !== false;
+
     settingsModal.classList.add('active');
 }
 
@@ -493,6 +520,76 @@ function handleSaveSettings() {
     closeSettingsModal();
     renderCurrentView();
     Components.updateNavMoney(appData);
+}
+
+/**
+ * Play task completion sound
+ */
+function playTaskSound(taskId) {
+    if (appData.settings.soundsEnabled === false) return;
+
+    const soundData = appData.settings.taskSounds?.[taskId];
+    if (!soundData) return;
+
+    try {
+        if (!taskAudioCache[taskId]) {
+            taskAudioCache[taskId] = new Audio(soundData);
+        }
+        taskAudioCache[taskId].currentTime = 0;
+        taskAudioCache[taskId].play().catch(() => { }); // Ignore autoplay errors
+    } catch (e) {
+        console.warn('Sound playback failed:', e);
+    }
+}
+
+/**
+ * Toggle sounds enabled/disabled
+ */
+function handleSoundsToggle() {
+    appData.settings.soundsEnabled = document.getElementById('soundsEnabled').checked;
+    Storage.saveData(appData);
+}
+
+/**
+ * Handle sound file upload
+ */
+async function handleSoundUpload() {
+    const fileInput = document.getElementById('soundFileInput');
+    const selectEl = document.getElementById('soundTaskSelect');
+    const taskId = selectEl.value;
+
+    if (!taskId) {
+        alert('Please select a task first');
+        return;
+    }
+
+    if (!fileInput.files.length) {
+        alert('Please select a sound file');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    if (file.size > 500000) { // 500KB limit for Firebase
+        alert('Sound file too large (max 500KB)');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        appData.settings.taskSounds = appData.settings.taskSounds || {};
+        appData.settings.taskSounds[taskId] = e.target.result;
+        Storage.saveData(appData);
+
+        // Clear cache so new sound loads
+        delete taskAudioCache[taskId];
+
+        alert('Sound uploaded and synced!');
+        fileInput.value = '';
+
+        // Refresh the dropdown to show checkmark
+        openSettingsModal();
+    };
+    reader.readAsDataURL(file);
 }
 
 /**
