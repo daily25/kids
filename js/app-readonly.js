@@ -302,13 +302,31 @@ function renderDashboard() {
  * Render tasks for current kid (view-only)
  */
 function renderTasks() {
+    console.log('renderTasks called, currentKid:', currentKid);
+    console.log('appData.kids keys:', Object.keys(appData.kids || {}));
+
     const kid = appData.kids[currentKid];
-    if (!kid) return;
+    if (!kid) {
+        console.error('Kid not found:', currentKid);
+        taskList.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">⚠️</span>
+                <p>Could not load data for ${currentKid}</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Ensure kid has required properties
+    if (!kid.tasks) kid.tasks = [];
+    if (!kid.history) kid.history = {};
 
     const today = new Date();
     const dayOfWeek = today.getDay();
     const currentWeek = getWeekNumber(today);
     const todayStr = getLocalDateString();
+
+    console.log('Today:', todayStr, 'Day of week:', dayOfWeek, 'Tasks count:', kid.tasks.length);
 
     // Calculate stats
     const stats = calculateKidStats(appData, currentKid, currentWeek);
@@ -318,7 +336,9 @@ function renderTasks() {
     document.getElementById('weeklyMoney').textContent = formatMoney(Storage.calculateWeeklyMoney(appData, currentKid));
 
     // Get today's tasks
-    const todaysTasks = kid.tasks.filter(task => task.activeDays.includes(dayOfWeek));
+    const todaysTasks = kid.tasks.filter(task => task.activeDays && task.activeDays.includes(dayOfWeek));
+
+    console.log('Tasks for today:', todaysTasks.length);
 
     if (todaysTasks.length === 0) {
         taskList.innerHTML = `
