@@ -244,6 +244,11 @@ function setupEventListeners() {
             renderCurrentView();
         }
     });
+
+    // Reload button - force refresh the page
+    document.getElementById('reloadBtn').addEventListener('click', () => {
+        window.location.reload(true); // Force reload from server
+    });
 }
 
 /**
@@ -350,29 +355,21 @@ function renderTasks() {
         return;
     }
 
-    let html = '';
+    // Clear task list
+    taskList.innerHTML = '';
+
+    // Use Components.renderTaskCard for proper styling
+    // Pass no-op functions to disable interactions
     todaysTasks.forEach(task => {
-        const isCompleted = kid.history[todayStr]?.tasks?.[task.id]?.completed || false;
-        const dotMatrix = buildDotMatrix(kid.history, task.id, task.activeDays);
-
-        html += `
-            <div class="task-card ${isCompleted ? 'completed' : ''}">
-                <div class="task-main">
-                    <span class="task-icon">${task.icon}</span>
-                    <div class="task-info">
-                        <span class="task-name">${escapeHtml(task.name)}</span>
-                        <span class="task-points">${task.points} pts</span>
-                    </div>
-                    <div class="task-status">
-                        ${isCompleted ? '✓' : '○'}
-                    </div>
-                </div>
-                <div class="dot-matrix">${dotMatrix}</div>
-            </div>
-        `;
+        const card = Components.renderTaskCard(
+            task,
+            currentKid,
+            appData,
+            () => { }, // No-op for toggle
+            () => { }  // No-op for edit
+        );
+        taskList.appendChild(card);
     });
-
-    taskList.innerHTML = html;
 }
 
 /**

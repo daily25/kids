@@ -50,9 +50,13 @@
     <div id="app">
         <!-- Header (simplified - no buttons) -->
         <header class="app-header">
-            <div style="width: 24px;"></div> <!-- Spacer -->
+            <button class="header-btn" id="reloadBtn" aria-label="Reload" title="Reload app">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12a9 9 0 11-3-6.72M21 3v6h-6"></path>
+                </svg>
+            </button>
             <h1 class="app-title" id="homeBtn" style="cursor:pointer"><span class="title-accent">Kids</span>Tasks</h1>
-            <span class="app-version">v0.37</span>
+            <span class="app-version">v0.38</span>
             <span class="readonly-badge">View Only</span>
             <div class="header-right">
                 <!-- Cloud sync indicator -->
@@ -109,7 +113,7 @@
     <script src="js/firebase.js?v=2"></script>
     <script src="js/storage.js?v=5"></script>
     <script src="js/components.js?v=5"></script>
-    <script src="js/app-readonly.js?v=7"></script>
+    <script src="js/app-readonly.js?v=8"></script>
 </body>
 
 </html>
