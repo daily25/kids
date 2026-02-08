@@ -1,6 +1,7 @@
 /**
  * Read-Only Application Module
  * Stripped down version for kids to view tasks without editing
+ * Self-contained with all helper functions
  */
 
 // App state
@@ -12,6 +13,10 @@ let currentView = 'dashboard';
 const taskList = document.getElementById('taskList');
 const bottomNav = document.getElementById('bottomNav');
 
+// ============================================
+// HELPER FUNCTIONS (self-contained)
+// ============================================
+
 /**
  * Get local date string in YYYY-MM-DD format
  */
@@ -22,6 +27,158 @@ function getLocalDateString(date = new Date()) {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
+
+/**
+ * Get week number for a date
+ */
+function getWeekNumber(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const yearStart = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+/**
+ * Format money value
+ */
+function formatMoney(amount) {
+    return '$' + amount.toFixed(2);
+}
+
+/**
+ * Calculate kid stats for current week
+ */
+function calculateKidStats(data, kidId, currentWeek) {
+    const kid = data.kids[kidId];
+    let weeklyCompleted = 0;
+    let weeklyTotal = 0;
+    let lifetimePoints = 0;
+    let streak = 0;
+    let level = 1;
+
+    // Calculate weekly stats
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = getLocalDateString(date);
+        const dayOfWeek = date.getDay();
+
+        if (getWeekNumber(date) !== currentWeek) continue;
+
+        kid.tasks.forEach(task => {
+            if (task.activeDays.includes(dayOfWeek)) {
+                weeklyTotal++;
+                if (kid.history[dateStr]?.tasks?.[task.id]?.completed) {
+                    weeklyCompleted++;
+                }
+            }
+        });
+    }
+
+    // Calculate lifetime points from history
+    Object.entries(kid.history || {}).forEach(([dateStr, dayData]) => {
+        if (dayData.tasks) {
+            Object.entries(dayData.tasks).forEach(([taskId, taskData]) => {
+                if (taskData.completed) {
+                    const task = kid.tasks.find(t => t.id === taskId);
+                    if (task) lifetimePoints += task.points;
+                }
+            });
+        }
+    });
+
+    // Add bonus/penalty points
+    if (data.pointsLog) {
+        data.pointsLog.filter(p => p.kidId === kidId).forEach(entry => {
+            lifetimePoints += entry.type === 'bonus' ? entry.points : -entry.points;
+        });
+    }
+
+    // Calculate level (every 50 points = 1 level)
+    level = Math.floor(lifetimePoints / 50) + 1;
+    if (level < 1) level = 1;
+
+    // Calculate streak
+    streak = kid.streak || 0;
+
+    return { weeklyCompleted, weeklyTotal, lifetimePoints, level, streak };
+}
+
+/**
+ * Render level badge
+ */
+function renderLevelBadge(level) {
+    return `<span class="level-badge">Lvl ${level}</span>`;
+}
+
+/**
+ * Render streak badge
+ */
+function renderStreakBadge(streak) {
+    if (streak < 1) return '';
+    return `<span class="streak-badge">🔥 ${streak}</span>`;
+}
+
+/**
+ * Build dot matrix HTML for a task
+ */
+function buildDotMatrix(history, taskId, activeDays) {
+    const days = [];
+    const today = new Date();
+
+    for (let i = 24; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        days.push(date);
+    }
+
+    return days.map(date => {
+        const dateStr = getLocalDateString(date);
+        const dayOfWeek = date.getDay();
+        const isActive = activeDays.includes(dayOfWeek);
+        const isCompleted = history[dateStr]?.tasks?.[taskId]?.completed || false;
+        const isFuture = date > today;
+        const isToday = dateStr === getLocalDateString(today);
+
+        if (!isActive) {
+            return `<span class="dot inactive"></span>`;
+        }
+        if (isFuture) {
+            return `<span class="dot future"></span>`;
+        }
+        if (isCompleted) {
+            return `<span class="dot completed"></span>`;
+        }
+        return `<span class="dot incomplete"></span>`;
+    }).join('');
+}
+
+/**
+ * Update navigation money display
+ */
+function updateNavMoney(data) {
+    ['olive', 'miles', 'zander'].forEach(kidId => {
+        const el = document.getElementById(`${kidId}Money`);
+        if (el && data.kids[kidId]) {
+            el.textContent = formatMoney(Storage.calculateWeeklyMoney(data, kidId));
+        }
+    });
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================
+// MAIN APP LOGIC
+// ============================================
 
 /**
  * Initialize the app
@@ -42,7 +199,7 @@ function init() {
         Components.renderDayHeaders(document.getElementById('dayHeaders'));
         Components.updateWeekInfo();
         renderCurrentView();
-        Components.updateNavMoney(appData);
+        updateNavMoney(appData);
 
         // Initialize Firebase sync (read-only listener)
         initFirebaseSync();
@@ -123,7 +280,7 @@ function renderDashboard() {
     const kids = ['olive', 'miles', 'zander'];
     const today = getLocalDateString();
     const dayOfWeek = new Date().getDay();
-    const currentWeek = Components.getWeekNumber(new Date());
+    const currentWeek = getWeekNumber(new Date());
 
     let html = `
         <div class="dashboard-header">
@@ -133,7 +290,7 @@ function renderDashboard() {
 
     kids.forEach(kidId => {
         const kid = appData.kids[kidId];
-        const stats = Components.calculateKidStats(appData, kidId, currentWeek);
+        const stats = calculateKidStats(appData, kidId, currentWeek);
         const weeklyMoney = Storage.calculateWeeklyMoney(appData, kidId);
 
         // Get today's completion status
@@ -150,11 +307,11 @@ function renderDashboard() {
                     <div class="dashboard-info">
                         <h3>${kid.name}</h3>
                         <div class="dashboard-badges">
-                            ${Components.renderLevelBadge(stats.level)}
-                            ${Components.renderStreakBadge(stats.streak)}
+                            ${renderLevelBadge(stats.level)}
+                            ${renderStreakBadge(stats.streak)}
                         </div>
                     </div>
-                    <div class="dashboard-money">${Components.formatMoney(weeklyMoney)}</div>
+                    <div class="dashboard-money">${formatMoney(weeklyMoney)}</div>
                 </div>
                 <div class="dashboard-card-stats">
                     <div class="stat">
@@ -191,15 +348,15 @@ function renderTasks() {
 
     const today = new Date();
     const dayOfWeek = today.getDay();
-    const currentWeek = Components.getWeekNumber(today);
+    const currentWeek = getWeekNumber(today);
     const todayStr = getLocalDateString();
 
     // Calculate stats
-    const stats = Components.calculateKidStats(appData, currentKid, currentWeek);
+    const stats = calculateKidStats(appData, currentKid, currentWeek);
 
     // Update summary bar
     document.getElementById('totalPoints').textContent = `${stats.weeklyCompleted}/${stats.weeklyTotal}`;
-    document.getElementById('weeklyMoney').textContent = Components.formatMoney(Storage.calculateWeeklyMoney(appData, currentKid));
+    document.getElementById('weeklyMoney').textContent = formatMoney(Storage.calculateWeeklyMoney(appData, currentKid));
 
     // Get today's tasks
     const todaysTasks = kid.tasks.filter(task => task.activeDays.includes(dayOfWeek));
@@ -217,7 +374,7 @@ function renderTasks() {
     let html = '';
     todaysTasks.forEach(task => {
         const isCompleted = kid.history[todayStr]?.tasks?.[task.id]?.completed || false;
-        const dotMatrix = Components.buildDotMatrix(kid.history, task.id, task.activeDays);
+        const dotMatrix = buildDotMatrix(kid.history, task.id, task.activeDays);
 
         html += `
             <div class="task-card ${isCompleted ? 'completed' : ''}">
@@ -254,7 +411,7 @@ function initFirebaseSync() {
         appData = Storage.mergeData(appData, remoteData);
         Storage.saveData(appData, false); // Save locally but don't push
         renderCurrentView();
-        Components.updateNavMoney(appData);
+        updateNavMoney(appData);
         updateSyncIndicator('synced');
     });
 
@@ -282,15 +439,6 @@ function updateSyncIndicator(status) {
             indicator.title = 'Offline';
             break;
     }
-}
-
-/**
- * Escape HTML to prevent XSS
- */
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // Initialize when DOM is ready
