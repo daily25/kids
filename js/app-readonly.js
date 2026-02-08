@@ -227,6 +227,23 @@ function setupEventListeners() {
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         renderCurrentView();
     });
+
+    // Dashboard card clicks - navigate to kid tasks
+    taskList.addEventListener('click', (e) => {
+        const card = e.target.closest('.summary-card');
+        if (card && card.dataset.kid) {
+            const kidId = card.dataset.kid;
+            currentKid = kidId;
+            currentView = 'tasks';
+
+            // Update nav active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.kid === kidId);
+            });
+
+            renderCurrentView();
+        }
+    });
 }
 
 /**
