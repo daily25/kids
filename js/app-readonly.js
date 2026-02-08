@@ -277,66 +277,8 @@ function renderCurrentView() {
  * Render dashboard with all kids
  */
 function renderDashboard() {
-    const kids = ['olive', 'miles', 'zander'];
-    const today = getLocalDateString();
-    const dayOfWeek = new Date().getDay();
-    const currentWeek = getWeekNumber(new Date());
-
-    let html = `
-        <div class="dashboard-header">
-            <h2>📊 This Week's Summary</h2>
-        </div>
-    `;
-
-    kids.forEach(kidId => {
-        const kid = appData.kids[kidId];
-        const stats = calculateKidStats(appData, kidId, currentWeek);
-        const weeklyMoney = Storage.calculateWeeklyMoney(appData, kidId);
-
-        // Get today's completion status
-        const todaysTasks = kid.tasks.filter(t => t.activeDays.includes(dayOfWeek));
-        const completedToday = todaysTasks.filter(t =>
-            kid.history[today]?.tasks?.[t.id]?.completed
-        ).length;
-        const totalToday = todaysTasks.length;
-
-        html += `
-            <div class="dashboard-card" data-kid="${kidId}">
-                <div class="dashboard-card-header">
-                    <img src="${kid.avatar}" alt="${kid.name}" class="dashboard-avatar">
-                    <div class="dashboard-info">
-                        <h3>${kid.name}</h3>
-                        <div class="dashboard-badges">
-                            ${renderLevelBadge(stats.level)}
-                            ${renderStreakBadge(stats.streak)}
-                        </div>
-                    </div>
-                    <div class="dashboard-money">${formatMoney(weeklyMoney)}</div>
-                </div>
-                <div class="dashboard-card-stats">
-                    <div class="stat">
-                        <span class="stat-value">${completedToday}/${totalToday}</span>
-                        <span class="stat-label">Today</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-value">${stats.weeklyCompleted}/${stats.weeklyTotal}</span>
-                        <span class="stat-label">This Week</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-value">${stats.lifetimePoints}</span>
-                        <span class="stat-label">Total Points</span>
-                    </div>
-                </div>
-                <div class="dashboard-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${stats.weeklyTotal > 0 ? (stats.weeklyCompleted / stats.weeklyTotal * 100) : 0}%"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-
-    taskList.innerHTML = html;
+    // Use the existing Components.renderDashboard which handles all the HTML/CSS properly
+    Components.renderDashboard(appData, taskList);
 }
 
 /**
