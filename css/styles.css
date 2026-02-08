@@ -877,6 +877,39 @@ body {
     font-weight: 500;
 }
 
+/* Avatar-only variant for points modal */
+.kid-selector.avatar-only {
+    gap: 16px;
+    justify-content: center;
+}
+
+.kid-selector.avatar-only .kid-checkbox {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    flex: 0;
+}
+
+.kid-selector.avatar-only .kid-checkbox-avatar {
+    width: 60px;
+    height: 60px;
+    border: 3px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+.kid-selector.avatar-only .kid-checkbox:has(input:checked) {
+    background: transparent;
+}
+
+.kid-selector.avatar-only .kid-checkbox:has(input:checked) .kid-checkbox-avatar {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 12px var(--accent-primary);
+}
+
+.kid-selector.avatar-only .kid-checkbox:hover .kid-checkbox-avatar {
+    transform: scale(1.08);
+}
+
 /* Day View Modal */
 .day-view-content {
     max-height: 60vh;
