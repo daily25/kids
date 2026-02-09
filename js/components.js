@@ -157,6 +157,37 @@ function renderDashboard(data, container) {
         `;
     }
 
+    // Build last week earnings HTML
+    const kids = ['olive', 'miles', 'zander'];
+    const lastWeekEarningsHtml = `
+        <div class="dashboard-earnings">
+            <h3>💰 Last Week's Earnings</h3>
+            <div class="earnings-grid">
+                ${kids.map(kidId => {
+        const kid = data.kids[kidId];
+        const lastWeekMoney = Storage.calculateLastWeekMoney(data, kidId);
+        const totalBanked = Storage.getTotalBanked(data, kidId);
+        return `
+                        <div class="earnings-card">
+                            <img src="${kid.avatar}" alt="${kid.name}" class="earnings-avatar">
+                            <div class="earnings-info">
+                                <div class="earnings-name">${kid.name}</div>
+                                <div class="earnings-last-week">
+                                    <span class="earnings-label">Last Week:</span>
+                                    <span class="earnings-amount">$${lastWeekMoney.toFixed(2)}</span>
+                                </div>
+                                <div class="earnings-total">
+                                    <span class="earnings-label">Total Banked:</span>
+                                    <span class="earnings-amount total">$${totalBanked.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+    }).join('')}
+            </div>
+        </div>
+    `;
+
     container.innerHTML = `
         <div class="dashboard">
             <div class="dashboard-summary">
@@ -187,6 +218,8 @@ function renderDashboard(data, container) {
                     `).join('')}
                 </div>
             </div>
+            
+            ${lastWeekEarningsHtml}
             
             ${adjustmentsHtml}
         </div>

@@ -628,6 +628,81 @@ function calculateWeeklyMoney(data, kidId) {
 }
 
 /**
+ * Get the start of the previous week (Monday before current week start)
+ */
+function getLastWeekStart(data) {
+    const currentWeekStart = new Date(data.settings.weekStart || getWeekStart(new Date()).toISOString());
+    const lastWeekStart = new Date(currentWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    return lastWeekStart;
+}
+
+/**
+ * Get bonus points earned during the previous week
+ */
+function getLastWeekBonusPoints(data, kidId) {
+    const lastWeekStart = getLastWeekStart(data);
+    const lastWeekEnd = new Date(lastWeekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() + 7);
+
+    const adjustments = data.pointsAdjustments || [];
+    let bonus = 0;
+
+    adjustments.forEach(adj => {
+        if (adj.kidId !== kidId) return;
+        const adjDate = new Date(adj.date);
+        if (adjDate >= lastWeekStart && adjDate < lastWeekEnd) {
+            if (adj.type === 'bonus') {
+                bonus += adj.amount;
+            } else {
+                bonus -= adj.amount;
+            }
+        }
+    });
+
+    return bonus;
+}
+
+/**
+ * Calculate money earned for the previous week
+ */
+function calculateLastWeekMoney(data, kidId) {
+    const lastWeekStart = getLastWeekStart(data);
+    const points = calculateWeekPoints(data, kidId, lastWeekStart.toISOString());
+    const bonusPoints = getLastWeekBonusPoints(data, kidId);
+    const maxAllowance = data.settings.allowances[kidId] || 0;
+
+    const totalEarned = points.earned + bonusPoints;
+    const totalPossible = points.possible + bonusPoints;
+
+    if (totalPossible <= 0) {
+        return 0;
+    }
+
+    const percentage = Math.max(0, Math.min(1, totalEarned / totalPossible));
+    return Math.round(maxAllowance * percentage * 100) / 100;
+}
+
+/**
+ * Get kid's total banked money (stored in kid data)
+ */
+function getTotalBanked(data, kidId) {
+    return data.kids[kidId]?.bankedMoney || 0;
+}
+
+/**
+ * Bank this week's money (add to total and reset week)
+ */
+function bankWeeklyEarnings(data, kidId) {
+    const currentEarnings = calculateWeeklyMoney(data, kidId);
+    if (!data.kids[kidId].bankedMoney) {
+        data.kids[kidId].bankedMoney = 0;
+    }
+    data.kids[kidId].bankedMoney += currentEarnings;
+    return data.kids[kidId].bankedMoney;
+}
+
+/**
  * Leaderboard
  */
 function getLeaderboard(data) {
@@ -671,6 +746,13 @@ function getLeaderboard(data) {
  * Week Management
  */
 function startNewWeek(data) {
+    // Bank the current week's earnings for all kids before resetting
+    const kids = ['olive', 'miles', 'zander'];
+    kids.forEach(kidId => {
+        bankWeeklyEarnings(data, kidId);
+    });
+
+    // Set the new week start
     data.settings.weekStart = getWeekStart(new Date()).toISOString();
     // Note: We keep historical completions for the dot matrix
     saveData(data);
@@ -761,6 +843,10 @@ window.Storage = {
     calculateDayPoints,
     calculateWeekPoints,
     calculateWeeklyMoney,
+    calculateLastWeekMoney,
+    getLastWeekStart,
+    getTotalBanked,
+    bankWeeklyEarnings,
     getLeaderboard,
     getKidBadges,
     getCurrentStreak,
