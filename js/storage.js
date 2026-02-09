@@ -746,9 +746,11 @@ function getLeaderboard(data) {
  * Week Management
  */
 function startNewWeek(data) {
-    // Bank the current week's earnings for all kids before resetting
+    // Save each kid's current week earnings as "last week" before banking
     const kids = ['olive', 'miles', 'zander'];
     kids.forEach(kidId => {
+        const earnings = calculateWeeklyMoney(data, kidId);
+        data.kids[kidId].lastWeekEarnings = earnings;
         bankWeeklyEarnings(data, kidId);
     });
 
@@ -756,6 +758,13 @@ function startNewWeek(data) {
     data.settings.weekStart = getWeekStart(new Date()).toISOString();
     // Note: We keep historical completions for the dot matrix
     saveData(data);
+}
+
+/**
+ * Get last week's earned money (stored when new week started)
+ */
+function getLastWeekEarnings(data, kidId) {
+    return data.kids[kidId]?.lastWeekEarnings || 0;
 }
 
 /**
@@ -846,6 +855,7 @@ window.Storage = {
     calculateLastWeekMoney,
     getLastWeekStart,
     getTotalBanked,
+    getLastWeekEarnings,
     bankWeeklyEarnings,
     getLeaderboard,
     getKidBadges,

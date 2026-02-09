@@ -165,19 +165,19 @@ function renderDashboard(data, container) {
             <div class="earnings-grid">
                 ${kids.map(kidId => {
         const kid = data.kids[kidId];
-        const lastWeekMoney = Storage.calculateLastWeekMoney(data, kidId);
+        const lastWeekMoney = Storage.getLastWeekEarnings(data, kidId);
         const totalBanked = Storage.getTotalBanked(data, kidId);
         return `
                         <div class="earnings-card">
                             <img src="${kid.avatar}" alt="${kid.name}" class="earnings-avatar">
                             <div class="earnings-info">
                                 <div class="earnings-name">${kid.name}</div>
-                                <div class="earnings-last-week">
-                                    <span class="earnings-label">Last Week:</span>
+                                <div class="earnings-row">
+                                    <span class="earnings-label">Last Week</span>
                                     <span class="earnings-amount">$${lastWeekMoney.toFixed(2)}</span>
                                 </div>
-                                <div class="earnings-total">
-                                    <span class="earnings-label">Total Banked:</span>
+                                <div class="earnings-row">
+                                    <span class="earnings-label">Total Banked</span>
                                     <span class="earnings-amount total">$${totalBanked.toFixed(2)}</span>
                                 </div>
                             </div>
