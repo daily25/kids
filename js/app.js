@@ -143,7 +143,7 @@ function setupEventListeners() {
             Storage.startNewWeek(appData);
             closeSettingsModal();
             renderCurrentView();
-            updateNavMoney();
+            Components.updateNavMoney(appData);
             showSyncNotification('New week started! Earnings banked.');
         }
     });
