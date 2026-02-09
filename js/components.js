@@ -127,19 +127,29 @@ function renderEmptyState() {
  */
 function renderDashboard(data, container) {
     const leaderboard = Storage.getLeaderboard(data);
-    const adjustments = Storage.getPointsAdjustments(data, null, 10);
+
+    // Filter adjustments to last 4 days only
+    const fourDaysAgo = new Date();
+    fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+    fourDaysAgo.setHours(0, 0, 0, 0);
+
+    const allAdjustments = Storage.getPointsAdjustments(data, null, 50);
+    const recentAdjustments = allAdjustments.filter(adj => {
+        const adjDate = new Date(adj.date);
+        return adjDate >= fourDaysAgo;
+    });
 
     // Build recent adjustments HTML
     let adjustmentsHtml = '';
-    if (adjustments.length > 0) {
+    if (recentAdjustments.length > 0) {
         adjustmentsHtml = `
             <div class="dashboard-adjustments">
                 <h3>📝 Recent Point Adjustments</h3>
                 <div class="adjustments-list">
-                    ${adjustments.map(adj => {
+                    ${recentAdjustments.map(adj => {
             const kid = data.kids[adj.kidId];
             const dateObj = new Date(adj.date);
-            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
             const sign = adj.type === 'bonus' ? '+' : '-';
             return `
                             <div class="adjustment-item">
@@ -199,21 +209,6 @@ function renderDashboard(data, container) {
                             <div class="summary-name">${kid.name}</div>
                             <div class="summary-money">$${kid.money.toFixed(2)}</div>
                             <div class="summary-max">of $${kid.maxMoney}</div>
-                            <div class="summary-stats">
-                                <span class="stat-level">⭐ Lv.${kid.level.level}</span>
-                                ${kid.streak > 0 ? `<span class="stat-streak">🔥${kid.streak}</span>` : ''}
-                            </div>
-                            <div class="summary-points">${kid.earnedPoints}/${kid.possiblePoints} pts (${kid.percentage}%)</div>
-                            <div class="summary-progress">
-                                <div class="progress-bar">
-                                    <div class="progress-fill" style="width: ${kid.percentage}%; background: ${getProgressColor(kid.percentage)};"></div>
-                                </div>
-                            </div>
-                            ${kid.badges.length > 0 ? `
-                                <div class="summary-badges">
-                                    ${kid.badges.map(b => `<span title="${b.name}: ${b.count}x">${b.icon}</span>`).join('')}
-                                </div>
-                            ` : ''}
                         </div>
                     `).join('')}
                 </div>
