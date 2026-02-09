@@ -137,6 +137,17 @@ function setupEventListeners() {
     // Update app button
     document.getElementById('updateAppBtn').addEventListener('click', handleUpdateApp);
 
+    // Start new week button
+    document.getElementById('startNewWeekBtn').addEventListener('click', () => {
+        if (confirm('Start a new week? This will:\n• Bank current earnings to each kid\'s total\n• Reset weekly points to 0\n\nContinue?')) {
+            Storage.startNewWeek(appData);
+            closeSettingsModal();
+            renderCurrentView();
+            updateNavMoney();
+            showSyncNotification('New week started! Earnings banked.');
+        }
+    });
+
     // Sound settings
     document.getElementById('uploadSoundBtn').addEventListener('click', handleSoundUpload);
     document.getElementById('removeSoundBtn').addEventListener('click', handleRemoveSound);
