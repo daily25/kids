@@ -131,8 +131,10 @@ function setupEventListeners() {
         }
     });
 
-    // Settings save
-    document.getElementById('saveSettingsBtn').addEventListener('click', handleSaveSettings);
+    // Auto-save allowances on change
+    ['oliverAllowance', 'milesAllowance', 'zanderAllowance'].forEach(id => {
+        document.getElementById(id).addEventListener('change', handleSaveSettings);
+    });
 
     // Update app button
     document.getElementById('updateAppBtn').addEventListener('click', handleUpdateApp);
@@ -538,7 +540,6 @@ function handleSaveSettings() {
     appData.settings.allowances.zander = parseInt(document.getElementById('zanderAllowance').value) || 20;
 
     Storage.saveData(appData);
-    closeSettingsModal();
     renderCurrentView();
     Components.updateNavMoney(appData);
 }

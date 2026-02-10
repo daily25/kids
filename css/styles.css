@@ -768,6 +768,35 @@ body {
     margin-top: 8px;
 }
 
+.allowance-row {
+    display: flex;
+    gap: 10px;
+}
+
+.allowance-item {
+    flex: 1;
+}
+
+.allowance-item label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.allowance-item .input-with-prefix span {
+    padding: 10px 6px;
+    font-size: 0.85rem;
+}
+
+.allowance-item .input-with-prefix input {
+    padding: 10px 4px;
+    font-size: 0.9rem;
+    width: 100%;
+    min-width: 0;
+}
+
 .form-select {
     width: 100%;
     padding: 14px 16px;
