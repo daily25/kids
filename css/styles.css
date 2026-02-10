@@ -2013,3 +2013,61 @@ body {
 .bonus-only-hint {
     opacity: 0.6;
 }
+
+/* Utility Classes (Replacing Inline Styles) */
+.hidden {
+    display: none !important;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.opacity-60 {
+    opacity: 0.6;
+}
+
+.mt-2 {
+    margin-top: 8px;
+}
+
+.mt-3 {
+    margin-top: 12px;
+}
+
+.mt-4 {
+    margin-top: 16px;
+}
+
+.mb-3 {
+    margin-bottom: 12px;
+}
+
+.w-full {
+    width: 100%;
+}
+
+/* Color Background Utilities */
+.bg-green {
+    background: #4ade80 !important;
+}
+
+.bg-yellow {
+    background: #fbbf24 !important;
+}
+
+.bg-red {
+    background: #f87171 !important;
+}
+
+.bg-blue {
+    background: #60a5fa !important;
+}
+
+.bg-purple {
+    background: #a855f7 !important;
+}
+
+.bg-pink {
+    background: #fb7185 !important;
+}
