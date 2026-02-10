@@ -94,47 +94,55 @@ const LEVEL_THRESHOLDS = [
     { level: 25, points: 2440, title: 'Task God' }
 ];
 /**
+ * Migrate data from old 'olive' key to 'oliver'
+ * Applied to both localStorage and Firebase data
+ */
+function migrateData(data) {
+    if (data.kids && data.kids.olive && !data.kids.oliver) {
+        data.kids.oliver = data.kids.olive;
+        data.kids.oliver.avatar = 'assets/oliver.png';
+        delete data.kids.olive;
+    }
+    if (data.settings && data.settings.allowances && 'olive' in data.settings.allowances) {
+        data.settings.allowances.oliver = data.settings.allowances.olive;
+        delete data.settings.allowances.olive;
+    }
+    if (data.completions) {
+        for (const key of Object.keys(data.completions)) {
+            if (key.startsWith('olive_')) {
+                data.completions['oliver' + key.slice(5)] = data.completions[key];
+                delete data.completions[key];
+            }
+        }
+    }
+    if (data.badges) {
+        for (const key of Object.keys(data.badges)) {
+            if (key.startsWith('olive_')) {
+                data.badges['oliver' + key.slice(5)] = data.badges[key];
+                delete data.badges[key];
+            }
+        }
+    }
+    if (data.pointAdjustments) {
+        data.pointAdjustments.forEach(adj => {
+            if (adj.kidId === 'olive') adj.kidId = 'oliver';
+        });
+    }
+    return data;
+}
+
+/**
  * Load data from LocalStorage
  */
 function loadData() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-            const data = JSON.parse(stored);
-            // Migrate 'olive' key to 'oliver'
-            if (data.kids && data.kids.olive && !data.kids.oliver) {
-                data.kids.oliver = data.kids.olive;
-                data.kids.oliver.avatar = 'assets/oliver.png';
-                delete data.kids.olive;
-            }
-            if (data.settings && data.settings.allowances && 'olive' in data.settings.allowances) {
-                data.settings.allowances.oliver = data.settings.allowances.olive;
-                delete data.settings.allowances.olive;
-            }
-            // Migrate completion/badge keys from olive_ to oliver_
-            if (data.completions) {
-                for (const key of Object.keys(data.completions)) {
-                    if (key.startsWith('olive_')) {
-                        data.completions['oliver' + key.slice(5)] = data.completions[key];
-                        delete data.completions[key];
-                    }
-                }
-            }
-            if (data.badges) {
-                for (const key of Object.keys(data.badges)) {
-                    if (key.startsWith('olive_')) {
-                        data.badges['oliver' + key.slice(5)] = data.badges[key];
-                        delete data.badges[key];
-                    }
-                }
-            }
-            if (data.pointAdjustments) {
-                data.pointAdjustments.forEach(adj => {
-                    if (adj.kidId === 'olive') adj.kidId = 'oliver';
-                });
-            }
+            const data = migrateData(JSON.parse(stored));
             // Merge with defaults to ensure all properties exist
-            return mergeDeep(defaultData, data);
+            const merged = mergeDeep(defaultData, data);
+            saveData(merged);
+            return merged;
         }
     } catch (e) {
         console.error('Error loading data:', e);
@@ -907,5 +915,6 @@ window.Storage = {
     getLevelProgress,
     getLifetimePoints,
     isPerfectDay,
-    saveDataLocal
+    saveDataLocal,
+    migrateData
 };
