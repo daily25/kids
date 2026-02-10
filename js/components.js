@@ -41,15 +41,17 @@ function renderTaskCard(task, kidId, data, onToggle, onEdit) {
         const isCompleted = Storage.isTaskCompleted(data, kidId, task.id, date);
         const isFuture = date > today;
         const isToday = Storage.formatDate(date) === Storage.formatDate(today);
+        const createdDate = task.createdAt ? new Date(task.createdAt) : null;
+        const beforeCreated = createdDate && Storage.formatDate(date) < Storage.formatDate(createdDate);
 
         let className = 'dot';
-        if (isFuture) className += ' future';
+        if (isFuture || beforeCreated) className += ' future';
         else if (isCompleted) className += ' completed';
         else className += ' incomplete';
 
-        const bgColor = isFuture ? '#333' : (isCompleted ? task.color : dimColor);
+        const bgColor = (isFuture || beforeCreated) ? '#333' : (isCompleted ? task.color : dimColor);
 
-        return `<div class="${className}" 
+        return `<div class="${className}"
                             style="background: ${bgColor};"
                             title="${date.toLocaleDateString()}${isToday ? ' (Today)' : ''}">
                         </div>`;
