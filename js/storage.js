@@ -10,14 +10,14 @@ const defaultData = {
         soundsEnabled: true,  // Toggle for task completion sounds
         taskSounds: {},       // Format: { 'taskId': 'base64_encoded_audio' }
         allowances: {
-            olive: 50,
+            oliver: 50,
             miles: 30,
             zander: 20
         },
         weekStart: null // Will be set on first load
     },
     kids: {
-        olive: { name: 'Oliver', avatar: 'assets/olive.png', tasks: [], badges: [] },
+        oliver: { name: 'Oliver', avatar: 'assets/oliver.png', tasks: [], badges: [] },
         miles: { name: 'Miles', avatar: 'assets/miles.png', tasks: [], badges: [] },
         zander: { name: 'Zander', avatar: 'assets/zander.png', tasks: [], badges: [] }
     },
@@ -101,6 +101,38 @@ function loadData() {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const data = JSON.parse(stored);
+            // Migrate 'olive' key to 'oliver'
+            if (data.kids && data.kids.olive && !data.kids.oliver) {
+                data.kids.oliver = data.kids.olive;
+                data.kids.oliver.avatar = 'assets/oliver.png';
+                delete data.kids.olive;
+            }
+            if (data.settings && data.settings.allowances && 'olive' in data.settings.allowances) {
+                data.settings.allowances.oliver = data.settings.allowances.olive;
+                delete data.settings.allowances.olive;
+            }
+            // Migrate completion/badge keys from olive_ to oliver_
+            if (data.completions) {
+                for (const key of Object.keys(data.completions)) {
+                    if (key.startsWith('olive_')) {
+                        data.completions['oliver' + key.slice(5)] = data.completions[key];
+                        delete data.completions[key];
+                    }
+                }
+            }
+            if (data.badges) {
+                for (const key of Object.keys(data.badges)) {
+                    if (key.startsWith('olive_')) {
+                        data.badges['oliver' + key.slice(5)] = data.badges[key];
+                        delete data.badges[key];
+                    }
+                }
+            }
+            if (data.pointAdjustments) {
+                data.pointAdjustments.forEach(adj => {
+                    if (adj.kidId === 'olive') adj.kidId = 'oliver';
+                });
+            }
             // Merge with defaults to ensure all properties exist
             return mergeDeep(defaultData, data);
         }
@@ -706,7 +738,7 @@ function bankWeeklyEarnings(data, kidId) {
  * Leaderboard
  */
 function getLeaderboard(data) {
-    const kids = ['olive', 'miles', 'zander'];
+    const kids = ['oliver', 'miles', 'zander'];
 
     return kids.map(kidId => {
         const kid = data.kids[kidId];
@@ -747,7 +779,7 @@ function getLeaderboard(data) {
  */
 function startNewWeek(data) {
     // Save each kid's current week earnings as "last week" before banking
-    const kids = ['olive', 'miles', 'zander'];
+    const kids = ['oliver', 'miles', 'zander'];
     kids.forEach(kidId => {
         const earnings = calculateWeeklyMoney(data, kidId);
         data.kids[kidId].lastWeekEarnings = earnings;

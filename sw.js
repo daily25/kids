@@ -9,7 +9,7 @@ const urlsToCache = [
     './js/storage.js',
     './js/components.js',
     './js/firebase.js',
-    './assets/olive.png',
+    './assets/oliver.png',
     './assets/miles.png',
     './assets/zander.png',
     './manifest.json',

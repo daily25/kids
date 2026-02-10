@@ -4,7 +4,7 @@
 
 // App state
 let appData = null;
-let currentKid = 'olive';
+let currentKid = 'oliver';
 let currentView = 'dashboard'; // 'tasks' or 'dashboard' - start on dashboard
 let editingTask = null;
 const taskAudioCache = {}; // Cache of Audio objects per task for sound playback
@@ -469,7 +469,7 @@ function handleDeleteTask() {
         const taskName = editingTask.name;
 
         // Delete from all kids who have a task with this name
-        ['olive', 'miles', 'zander'].forEach(kidId => {
+        ['oliver', 'miles', 'zander'].forEach(kidId => {
             const kid = appData.kids[kidId];
             const matchingTask = kid.tasks.find(t => t.name === taskName);
             if (matchingTask) {
@@ -488,7 +488,7 @@ function handleDeleteTask() {
  */
 function openSettingsModal() {
     // Populate current values
-    document.getElementById('oliveAllowance').value = appData.settings.allowances.olive;
+    document.getElementById('oliverAllowance').value = appData.settings.allowances.oliver;
     document.getElementById('milesAllowance').value = appData.settings.allowances.miles;
     document.getElementById('zanderAllowance').value = appData.settings.allowances.zander;
 
@@ -496,7 +496,7 @@ function openSettingsModal() {
     const soundSelect = document.getElementById('soundTaskSelect');
     soundSelect.innerHTML = '<option value="">Choose a task...</option>';
     const allTasks = new Map();
-    ['olive', 'miles', 'zander'].forEach(kidId => {
+    ['oliver', 'miles', 'zander'].forEach(kidId => {
         const kid = appData.kids[kidId];
         if (kid && kid.tasks && Array.isArray(kid.tasks)) {
             kid.tasks.forEach(task => {
@@ -533,7 +533,7 @@ function closeSettingsModal() {
  * Handle save settings
  */
 function handleSaveSettings() {
-    appData.settings.allowances.olive = parseInt(document.getElementById('oliveAllowance').value) || 50;
+    appData.settings.allowances.oliver = parseInt(document.getElementById('oliverAllowance').value) || 50;
     appData.settings.allowances.miles = parseInt(document.getElementById('milesAllowance').value) || 30;
     appData.settings.allowances.zander = parseInt(document.getElementById('zanderAllowance').value) || 20;
 
@@ -551,7 +551,7 @@ function playTaskSound(taskId) {
 
     // Find task name from taskId (sounds are stored by name for cross-device sync)
     let taskName = null;
-    ['olive', 'miles', 'zander'].forEach(kidId => {
+    ['oliver', 'miles', 'zander'].forEach(kidId => {
         const kid = appData.kids[kidId];
         if (kid && kid.tasks) {
             const task = kid.tasks.find(t => t.id === taskId);
@@ -825,7 +825,7 @@ function openDayViewModal(date) {
     // If viewing a specific kid's tasks, only show that kid
     // If on dashboard, show all kids
     const content = document.getElementById('dayViewContent');
-    const kids = currentView === 'tasks' ? [currentKid] : ['olive', 'miles', 'zander'];
+    const kids = currentView === 'tasks' ? [currentKid] : ['oliver', 'miles', 'zander'];
 
     let html = `
         <div class="day-view-summary">
@@ -986,7 +986,7 @@ function renderPointsLog() {
     // Render weekly bonus totals per kid
     const totalsContainer = document.getElementById('weeklyBonusTotals');
     if (totalsContainer) {
-        totalsContainer.innerHTML = ['olive', 'miles', 'zander'].map(kidId => {
+        totalsContainer.innerHTML = ['oliver', 'miles', 'zander'].map(kidId => {
             const kid = appData.kids[kidId];
             const bonus = Storage.getWeeklyBonusPoints(appData, kidId);
             const sign = bonus > 0 ? '+' : '';

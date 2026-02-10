@@ -168,7 +168,7 @@ function renderDashboard(data, container) {
     }
 
     // Build last week earnings HTML
-    const kids = ['olive', 'miles', 'zander'];
+    const kids = ['oliver', 'miles', 'zander'];
     const lastWeekEarningsHtml = `
         <div class="dashboard-earnings">
             <h3>💰 Last Week's Earnings</h3>
@@ -262,7 +262,7 @@ function escapeHtml(text) {
  * Update navigation money displays
  */
 function updateNavMoney(data) {
-    const kids = ['olive', 'miles', 'zander'];
+    const kids = ['oliver', 'miles', 'zander'];
     kids.forEach(kidId => {
         const money = Storage.calculateWeeklyMoney(data, kidId);
         const el = document.getElementById(`${kidId}Money`);

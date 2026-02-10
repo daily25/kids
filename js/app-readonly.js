@@ -6,7 +6,7 @@
 
 // App state
 let appData = null;
-let currentKid = 'olive';
+let currentKid = 'oliver';
 let currentView = 'dashboard';
 
 // DOM Elements
@@ -159,7 +159,7 @@ function buildDotMatrix(history, taskId, activeDays) {
  * Update navigation money display
  */
 function updateNavMoney(data) {
-    ['olive', 'miles', 'zander'].forEach(kidId => {
+    ['oliver', 'miles', 'zander'].forEach(kidId => {
         const el = document.getElementById(`${kidId}Money`);
         if (el && data.kids[kidId]) {
             el.textContent = formatMoney(Storage.calculateWeeklyMoney(data, kidId));

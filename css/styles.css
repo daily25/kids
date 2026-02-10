@@ -1864,12 +1864,10 @@ body {
 }
 
 .dashboard-earnings h3 {
-    font-size: 1.1rem;
-    color: var(--text-primary);
+    font-size: 1rem;
+    color: var(--text-secondary);
     margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    text-align: center;
 }
 
 .earnings-grid {
