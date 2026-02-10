@@ -388,59 +388,40 @@ function getLifetimePoints(data, kidId) {
     let total = 0;
     const tasks = data.kids[kidId].tasks;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const todayStr = formatDate(today);
 
-    // Sum points from all completions
+    // Sum points from all completions, and count past completions per task for penalty calc
+    const pastCompletions = {};
     Object.keys(data.completions).forEach(key => {
         if (key.startsWith(kidId + '_')) {
             const parts = key.split('_');
-            const taskId = parts.slice(1, -1).join('_'); // Handle task_TIMESTAMP format
+            const dateStr = parts[parts.length - 1];
+            const taskId = parts.slice(1, -1).join('_');
             const task = tasks.find(t => t.id === taskId);
             if (task) {
                 total += task.points;
+                if (dateStr < todayStr) {
+                    pastCompletions[taskId] = (pastCompletions[taskId] || 0) + 1;
+                }
             }
         }
     });
 
-    // Calculate penalties for incomplete tasks from past days
-    // We need to find all dates where tasks were active and not completed
-    const processedDates = new Set();
+    // Calculate penalties using date math instead of day-by-day iteration
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-    // Get all dates from completions to find the range of active days
-    Object.keys(data.completions).forEach(key => {
-        if (key.startsWith(kidId + '_')) {
-            const parts = key.split('_');
-            const dateStr = parts[parts.length - 1]; // Last part is the date
-            if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                processedDates.add(dateStr);
-            }
-        }
-    });
-
-    // Also check from task creation dates to today for any missed days
     tasks.forEach(task => {
         if (task.createdAt) {
             const createdDate = new Date(task.createdAt);
+            createdDate.setHours(0, 0, 0, 0);
+            if (createdDate > yesterday) return; // Created today, no penalties yet
+
             const taskActiveDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
-
-            // Iterate from creation date to yesterday
-            const checkDate = new Date(createdDate);
-            checkDate.setHours(0, 0, 0, 0);
-
-            while (formatDate(checkDate) < todayStr) {
-                const dayOfWeek = checkDate.getDay();
-                const dateStr = formatDate(checkDate);
-
-                // If task is active on this day and not completed, apply penalty
-                if (taskActiveDays.includes(dayOfWeek)) {
-                    const completionKey = getCompletionKey(kidId, task.id, checkDate);
-                    if (!data.completions[completionKey]) {
-                        total -= 1; // Penalty for incomplete task
-                    }
-                }
-
-                checkDate.setDate(checkDate.getDate() + 1);
-            }
+            const activeDayCount = countActiveDaysInRange(createdDate, yesterday, taskActiveDays);
+            const completedCount = pastCompletions[task.id] || 0;
+            total -= Math.max(0, activeDayCount - completedCount);
         }
     });
 
@@ -454,6 +435,25 @@ function getLifetimePoints(data, kidId) {
     }
 
     return Math.max(0, total);
+}
+
+/**
+ * Count how many days in a date range fall on the given active days of week.
+ * Both startDate and endDate are inclusive.
+ */
+function countActiveDaysInRange(startDate, endDate, activeDays) {
+    const totalDays = Math.round((endDate - startDate) / 86400000) + 1;
+    if (totalDays <= 0) return 0;
+
+    const fullWeeks = Math.floor(totalDays / 7);
+    const remainder = totalDays % 7;
+    const startDow = startDate.getDay();
+
+    let count = fullWeeks * activeDays.length;
+    for (let i = 0; i < remainder; i++) {
+        if (activeDays.includes((startDow + i) % 7)) count++;
+    }
+    return count;
 }
 
 
@@ -757,6 +757,7 @@ function getLeaderboard(data) {
         const bonusPoints = getWeeklyBonusPoints(data, kidId);
         const streak = getCurrentStreak(data, kidId);
         const badges = getKidBadges(data, kidId);
+        const lifetimePoints = getLifetimePoints(data, kidId);
 
         // Bonus points add to BOTH earned AND possible
         const totalEarned = points.earned + bonusPoints;
@@ -775,9 +776,9 @@ function getLeaderboard(data) {
             streak,
             badges,
             badgeCount: badges.reduce((sum, b) => sum + b.count, 0),
-            lifetimePoints: getLifetimePoints(data, kidId),
-            level: calculateLevel(getLifetimePoints(data, kidId)),
-            levelProgress: getLevelProgress(getLifetimePoints(data, kidId))
+            lifetimePoints,
+            level: calculateLevel(lifetimePoints),
+            levelProgress: getLevelProgress(lifetimePoints)
         };
     }).sort((a, b) => b.percentage - a.percentage);
 }
