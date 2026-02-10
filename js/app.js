@@ -317,7 +317,7 @@ function renderTaskList() {
         return;
     }
 
-    activeTasks.forEach(task => {
+    activeTasks.forEach((task, index) => {
         const card = Components.renderTaskCard(
             task,
             currentKid,
@@ -325,8 +325,39 @@ function renderTaskList() {
             handleToggleTask,
             openEditTaskModal
         );
+
+        // Add reorder buttons
+        const reorderBar = document.createElement('div');
+        reorderBar.className = 'task-reorder-bar';
+        reorderBar.innerHTML = `
+            <button class="task-reorder-btn" data-task-id="${task.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Move up">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+            </button>
+            <button class="task-reorder-btn" data-task-id="${task.id}" data-direction="down" ${index === activeTasks.length - 1 ? 'disabled' : ''} title="Move down">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+        `;
+        card.appendChild(reorderBar);
+
+        // Add reorder click handlers
+        reorderBar.querySelectorAll('.task-reorder-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleMoveTask(btn.dataset.taskId, btn.dataset.direction);
+            });
+        });
+
         taskList.appendChild(card);
     });
+}
+
+/**
+ * Handle task reorder (move up/down)
+ */
+function handleMoveTask(taskId, direction) {
+    Storage.reorderTasks(appData, currentKid, taskId, direction);
+    renderCurrentView();
+    Components.updateNavMoney(appData);
 }
 
 /**
@@ -388,6 +419,9 @@ function openTaskModal() {
         btn.classList.add('selected');
     });
 
+    // Reset bonus-only toggle
+    document.getElementById('taskBonusOnly').checked = false;
+
     // Reset kid checkboxes - check all by default
     document.querySelectorAll('#kidSelector input[type="checkbox"]').forEach(cb => {
         cb.checked = true;
@@ -426,6 +460,9 @@ function openEditTaskModal(task) {
         btn.classList.toggle('selected', activeDays.includes(day));
     });
 
+    // Set bonus-only toggle
+    document.getElementById('taskBonusOnly').checked = !!task.bonusOnly;
+
     taskModal.classList.add('active');
 }
 
@@ -452,6 +489,9 @@ function handleTaskSubmit(e) {
     const activeDays = Array.from(document.querySelectorAll('.day-btn.selected'))
         .map(btn => parseInt(btn.dataset.day));
 
+    // Get bonus-only state
+    const bonusOnly = document.getElementById('taskBonusOnly').checked;
+
     if (!name) return;
 
     if (activeDays.length === 0) {
@@ -462,7 +502,7 @@ function handleTaskSubmit(e) {
     if (editingTask) {
         // Update existing task for current kid only
         Storage.updateTask(appData, currentKid, editingTask.id, {
-            name, points, icon, color, activeDays
+            name, points, icon, color, activeDays, bonusOnly
         });
     } else {
         // Add new task to selected kids
@@ -476,7 +516,7 @@ function handleTaskSubmit(e) {
 
         selectedKids.forEach(kidId => {
             Storage.addTask(appData, kidId, {
-                name, points, icon, color, activeDays
+                name, points, icon, color, activeDays, bonusOnly
             });
         });
     }

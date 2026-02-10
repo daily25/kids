@@ -281,6 +281,7 @@ function addTask(data, kidId, task) {
         icon: task.icon || '📝',
         color: task.color || '#4ade80',
         activeDays: task.activeDays || [0, 1, 2, 3, 4, 5, 6], // Default to all days
+        bonusOnly: !!task.bonusOnly, // Bonus-only: no penalty if missed
         createdAt: new Date().toISOString()
     };
     data.kids[kidId].tasks.push(newTask);
@@ -344,13 +345,14 @@ function isTaskActiveOnDate(task, date) {
     return activeDays.includes(day);
 }
 
-// Function to check if all ACTIVE tasks for a date are completed
+// Function to check if all ACTIVE non-bonus tasks for a date are completed
 function isPerfectDay(data, kidId, date) {
     const tasks = data.kids[kidId].tasks;
     if (tasks.length === 0) return false;
 
-    const activeTasks = tasks.filter(task => isTaskActiveOnDate(task, date));
-    if (activeTasks.length === 0) return false; // No tasks today = no perfect day? or auto perfect? Let's say no.
+    // Exclude bonus-only tasks from perfect day check
+    const activeTasks = tasks.filter(task => isTaskActiveOnDate(task, date) && !task.bonusOnly);
+    if (activeTasks.length === 0) return false;
 
     return activeTasks.every(task => isTaskCompleted(data, kidId, task.id, date));
 }
@@ -413,6 +415,9 @@ function getLifetimePoints(data, kidId) {
     yesterday.setDate(yesterday.getDate() - 1);
 
     tasks.forEach(task => {
+        // Skip penalty calculation for bonus-only tasks
+        if (task.bonusOnly) return;
+
         if (task.createdAt) {
             const createdDate = new Date(task.createdAt);
             createdDate.setHours(0, 0, 0, 0);
@@ -617,12 +622,20 @@ function calculateDayPoints(data, kidId, date) {
             return;
         }
 
-        possible += task.points;
-        if (isTaskCompleted(data, kidId, task.id, date)) {
-            earned += task.points;
-        } else if (isPastDay) {
-            // Penalty: -1 point for each incomplete task from past days
-            earned -= 1;
+        if (task.bonusOnly) {
+            // Bonus-only: only add to possible/earned if completed, no penalty
+            if (isTaskCompleted(data, kidId, task.id, date)) {
+                earned += task.points;
+                possible += task.points;
+            }
+        } else {
+            possible += task.points;
+            if (isTaskCompleted(data, kidId, task.id, date)) {
+                earned += task.points;
+            } else if (isPastDay) {
+                // Penalty: -1 point for each incomplete task from past days
+                earned -= 1;
+            }
         }
     });
 
@@ -865,6 +878,16 @@ function getWeeklyBonusPoints(data, kidId) {
     return totalBonus;
 }
 
+function reorderTasks(data, kidId, taskId, direction) {
+    const tasks = data.kids[kidId].tasks;
+    const index = tasks.findIndex(t => t.id === taskId);
+    if (index === -1) return;
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= tasks.length) return;
+    [tasks[index], tasks[newIndex]] = [tasks[newIndex], tasks[index]];
+    saveData(data);
+}
+
 function deletePointsAdjustment(data, adjustmentId) {
     if (!data.pointAdjustments) return;
 
@@ -905,6 +928,7 @@ window.Storage = {
     getPointsAdjustments,
     getWeeklyBonusPoints,
     deletePointsAdjustment,
+    reorderTasks,
     BADGE_TYPES,
     LEVEL_THRESHOLDS,
     calculateLevel,

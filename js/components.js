@@ -26,7 +26,7 @@ function renderTaskCard(task, kidId, data, onToggle, onEdit) {
             </div>
             <div class="task-info">
                 <div class="task-name">${escapeHtml(task.name)}</div>
-                <div class="task-points">${task.points} points</div>
+                <div class="task-points">${task.points} points${task.bonusOnly ? ' <span class="bonus-badge">⭐ Bonus</span>' : ''}</div>
             </div>
             <button class="task-toggle ${completedToday ? 'completed' : ''}" 
                     style="${completedToday ? `border-color: ${task.color}; background: ${dimColor};` : ''}"

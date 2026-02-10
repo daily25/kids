@@ -1959,3 +1959,57 @@ body {
     color: var(--color-green);
     font-size: 1.2rem;
 }
+
+/* Bonus Badge */
+.bonus-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-left: 4px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
+/* Task Reorder Bar */
+.task-reorder-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 4px 8px 4px 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 4px;
+}
+
+.task-reorder-btn {
+    width: 32px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.task-reorder-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+}
+
+.task-reorder-btn:disabled {
+    opacity: 0.2;
+    cursor: default;
+}
+
+/* Bonus-only toggle hint */
+.bonus-only-hint {
+    opacity: 0.6;
+}
