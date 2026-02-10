@@ -51,6 +51,9 @@ function init() {
         console.log('Init complete');
 
 
+        // Check if a new week has started
+        checkForNewWeek();
+
         // Initialize Firebase sync
         initFirebaseSync();
     } catch (error) {
@@ -61,6 +64,28 @@ function init() {
                 <pre>${error.message}</pre>
             </div>
         `;
+    }
+}
+
+/**
+ * Check if a new week has started and prompt to bank earnings
+ */
+function checkForNewWeek() {
+    if (!appData || !appData.settings.weekStart) return;
+
+    const savedWeekStart = Storage.formatDate(new Date(appData.settings.weekStart));
+    const currentWeekStart = Storage.formatDate(Storage.getWeekStart(new Date()));
+
+    if (savedWeekStart < currentWeekStart) {
+        // Delay slightly so the UI renders first
+        setTimeout(() => {
+            if (confirm('It\'s a new week! Would you like to bank last week\'s earnings and start fresh?')) {
+                Storage.startNewWeek(appData);
+                renderCurrentView();
+                Components.updateNavMoney(appData);
+                showSyncNotification('New week started! Earnings banked.');
+            }
+        }, 500);
     }
 }
 
@@ -467,7 +492,7 @@ function handleTaskSubmit(e) {
 function handleDeleteTask() {
     if (!editingTask) return;
 
-    if (confirm(`Delete "${editingTask.name}" for ALL children? This cannot be undone.`)) {
+    if (confirm(`⚠️ DELETE "${editingTask.name}"?\n\nThis will remove the task from ALL children (Oliver, Miles & Zander) and delete all completion history.\n\nThis cannot be undone.`)) {
         const taskName = editingTask.name;
 
         // Delete from all kids who have a task with this name
