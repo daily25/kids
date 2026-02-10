@@ -828,11 +828,6 @@ function addPointsAdjustment(data, kidId, amount, reason, type) {
 
     data.pointAdjustments.unshift(adjustment); // Add to beginning
 
-    // Keep only last 50 adjustments to prevent unbounded growth
-    if (data.pointAdjustments.length > 50) {
-        data.pointAdjustments = data.pointAdjustments.slice(0, 50);
-    }
-
     saveData(data);
     return adjustment;
 }
