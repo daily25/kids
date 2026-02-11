@@ -18,6 +18,8 @@ const dayViewModal = document.getElementById('dayViewModal');
 const pointsModal = document.getElementById('pointsModal');
 const taskForm = document.getElementById('taskForm');
 const pointsForm = document.getElementById('pointsForm');
+const withdrawalModal = document.getElementById('withdrawalModal');
+const withdrawalForm = document.getElementById('withdrawalForm');
 
 /**
  * Initialize the app
@@ -181,6 +183,13 @@ function setupEventListeners() {
     document.getElementById('soundsEnabled').addEventListener('change', handleSoundsToggle);
     document.getElementById('soundTaskSelect').addEventListener('change', handleSoundTaskChange);
 
+    // Withdrawal modal
+    document.getElementById('withdrawalModalClose').addEventListener('click', closeWithdrawalModal);
+    withdrawalModal.addEventListener('click', (e) => {
+        if (e.target === withdrawalModal) closeWithdrawalModal();
+    });
+    withdrawalForm.addEventListener('submit', handleWithdrawalSubmit);
+
     // Handle keyboard escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -188,6 +197,7 @@ function setupEventListeners() {
             closeSettingsModal();
             closeDayViewModal();
             closePointsModal();
+            closeWithdrawalModal();
         }
     });
 
@@ -289,6 +299,12 @@ function renderDashboardView() {
             renderCurrentView();
         });
     });
+
+    // Wire up the Record Payout button (rendered dynamically in dashboard)
+    const payoutBtn = document.getElementById('recordPayoutBtn');
+    if (payoutBtn) {
+        payoutBtn.addEventListener('click', openWithdrawalModal);
+    }
 }
 
 /**
@@ -1041,6 +1057,62 @@ function handlePointsSubmit(e) {
 
     // Close modal and update displays
     closePointsModal();
+    renderCurrentView();
+    Components.updateNavMoney(appData);
+}
+
+/**
+ * Open withdrawal modal
+ */
+function openWithdrawalModal() {
+    // Reset form
+    document.getElementById('withdrawalAmount').value = '';
+    document.getElementById('withdrawalNote').value = '';
+
+    // Reset kid selection to current kid or first
+    const currentKidRadio = document.querySelector(`input[name="withdrawalKid"][value="${currentKid}"]`);
+    if (currentKidRadio) {
+        currentKidRadio.checked = true;
+    } else {
+        document.querySelector('input[name="withdrawalKid"]').checked = true;
+    }
+
+    withdrawalModal.classList.add('active');
+    document.getElementById('withdrawalAmount').focus();
+}
+
+/**
+ * Close withdrawal modal
+ */
+function closeWithdrawalModal() {
+    withdrawalModal.classList.remove('active');
+}
+
+/**
+ * Handle withdrawal form submission
+ */
+function handleWithdrawalSubmit(e) {
+    e.preventDefault();
+
+    const kidId = document.querySelector('input[name="withdrawalKid"]:checked')?.value;
+    const amount = parseFloat(document.getElementById('withdrawalAmount').value);
+    const note = document.getElementById('withdrawalNote').value.trim();
+
+    if (!kidId || !amount || amount <= 0) {
+        alert('Please select a child and enter a valid amount');
+        return;
+    }
+
+    const balance = Storage.getTotalBanked(appData, kidId);
+    if (amount > balance) {
+        alert(`${appData.kids[kidId].name} only has $${balance.toFixed(2)} in the bank.`);
+        return;
+    }
+
+    Storage.addWithdrawal(appData, kidId, amount, note);
+
+    // Close modal and update displays
+    closeWithdrawalModal();
     renderCurrentView();
     Components.updateNavMoney(appData);
 }

@@ -30,7 +30,7 @@
                 </svg>
             </button>
             <h1 class="app-title cursor-pointer" id="homeBtn"><span class="title-accent">Kids</span>Tasks</h1>
-            <span class="app-version">v0.52</span>
+            <span class="app-version">v0.53</span>
             <div class="header-right">
                 <button class="header-btn" id="bonusPointsBtn" aria-label="Add/Remove Points" title="Add/Remove Points">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -341,6 +341,46 @@
                     <!-- Will be populated by JS -->
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Withdrawal / Payout Modal -->
+    <div class="modal-overlay" id="withdrawalModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>🐷 Record Payout</h2>
+                <button class="modal-close" id="withdrawalModalClose">&times;</button>
+            </div>
+            <form id="withdrawalForm">
+                <div class="form-group">
+                    <label>Select Child</label>
+                    <div class="kid-selector single-select avatar-only" id="withdrawalKidSelector">
+                        <label class="kid-checkbox">
+                            <input type="radio" name="withdrawalKid" value="oliver" checked>
+                            <img src="assets/oliver.png" alt="Oliver" class="kid-checkbox-avatar">
+                        </label>
+                        <label class="kid-checkbox">
+                            <input type="radio" name="withdrawalKid" value="miles">
+                            <img src="assets/miles.png" alt="Miles" class="kid-checkbox-avatar">
+                        </label>
+                        <label class="kid-checkbox">
+                            <input type="radio" name="withdrawalKid" value="zander">
+                            <img src="assets/zander.png" alt="Zander" class="kid-checkbox-avatar">
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="withdrawalAmount">Amount ($)</label>
+                    <input type="number" id="withdrawalAmount" min="0.01" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="form-group">
+                    <label for="withdrawalNote">Note (optional)</label>
+                    <input type="text" id="withdrawalNote" placeholder="e.g., Bought a toy">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="saveWithdrawalBtn">Save Payout</button>
+                </div>
+            </form>
         </div>
     </div>
 

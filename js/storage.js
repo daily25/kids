@@ -22,7 +22,8 @@ const defaultData = {
         zander: { name: 'Zander', avatar: 'assets/zander.png', tasks: [], badges: [] }
     },
     completions: {}, // Format: { 'kidId_taskId_YYYY-MM-DD': true }
-    badges: {} // Format: { 'kidId_badgeType_date': true }
+    badges: {}, // Format: { 'kidId_badgeType_date': true }
+    withdrawals: [] // Format: [{ id, kidId, amount, note, date }]
 };
 
 // Badge definitions
@@ -899,6 +900,48 @@ function deletePointsAdjustment(data, adjustmentId) {
     saveData(data);
 }
 
+/**
+ * Withdrawal / Payout Operations
+ */
+function addWithdrawal(data, kidId, amount, note) {
+    if (!data.withdrawals) {
+        data.withdrawals = [];
+    }
+    const withdrawal = {
+        id: 'wd_' + Date.now(),
+        kidId,
+        amount: parseFloat(amount),
+        note: note || '',
+        date: new Date().toISOString()
+    };
+    data.withdrawals.unshift(withdrawal);
+
+    // Deduct from banked money
+    if (!data.kids[kidId].bankedMoney) {
+        data.kids[kidId].bankedMoney = 0;
+    }
+    data.kids[kidId].bankedMoney = Math.max(0, data.kids[kidId].bankedMoney - withdrawal.amount);
+
+    saveData(data);
+    return withdrawal;
+}
+
+function getWithdrawals(data, kidId = null, limit = 10) {
+    if (!data.withdrawals) return [];
+    let list = data.withdrawals;
+    if (kidId) {
+        list = list.filter(w => w.kidId === kidId);
+    }
+    return list.slice(0, limit);
+}
+
+function getTotalWithdrawn(data, kidId) {
+    if (!data.withdrawals) return 0;
+    return data.withdrawals
+        .filter(w => w.kidId === kidId)
+        .reduce((sum, w) => sum + w.amount, 0);
+}
+
 // Export functions
 window.Storage = {
     loadData,
@@ -929,6 +972,9 @@ window.Storage = {
     getWeeklyBonusPoints,
     deletePointsAdjustment,
     reorderTasks,
+    addWithdrawal,
+    getWithdrawals,
+    getTotalWithdrawn,
     BADGE_TYPES,
     LEVEL_THRESHOLDS,
     calculateLevel,

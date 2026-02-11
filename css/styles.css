@@ -2071,3 +2071,143 @@ body {
 .bg-pink {
     background: #fb7185 !important;
 }
+
+/* ==========================================
+   Bank Section
+   ========================================== */
+.bank-section {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.bank-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.bank-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+}
+
+.bank-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bank-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 12px;
+}
+
+.bank-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.bank-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.bank-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.bank-balance-row,
+.bank-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    line-height: 1.6;
+}
+
+.bank-label {
+    color: var(--text-muted);
+}
+
+.bank-balance {
+    color: var(--color-green);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.bank-detail {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Withdrawal History */
+.withdrawal-history {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.withdrawal-history h4 {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.withdrawal-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.withdrawal-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.withdrawal-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.withdrawal-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.withdrawal-date {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.withdrawal-amount {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-red);
+    flex-shrink: 0;
+}

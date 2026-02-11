@@ -169,34 +169,72 @@ function renderDashboard(data, container) {
         `;
     }
 
-    // Build last week earnings HTML
+    // Build Bank section HTML
     const kids = ['oliver', 'miles', 'zander'];
-    const lastWeekEarningsHtml = `
-        <div class="dashboard-earnings">
-            <h3>💰 Last Week's Earnings</h3>
-            <div class="earnings-grid">
+
+    // Get all recent withdrawals (across all kids, last 5)
+    const recentWithdrawals = Storage.getWithdrawals(data, null, 5);
+
+    let withdrawalHistoryHtml = '';
+    if (recentWithdrawals.length > 0) {
+        withdrawalHistoryHtml = `
+            <div class="withdrawal-history">
+                <h4>Recent Payouts</h4>
+                ${recentWithdrawals.map(w => {
+            const kid = data.kids[w.kidId];
+            const dateObj = new Date(w.date);
+            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `
+                        <div class="withdrawal-item">
+                            <img src="${kid.avatar}" alt="${kid.name}" class="withdrawal-avatar">
+                            <div class="withdrawal-info">
+                                <div class="withdrawal-name">${kid.name}${w.note ? ' — ' + escapeHtml(w.note) : ''}</div>
+                                <div class="withdrawal-date">${dateStr}</div>
+                            </div>
+                            <div class="withdrawal-amount">-$${w.amount.toFixed(2)}</div>
+                        </div>
+                    `;
+        }).join('')}
+            </div>
+        `;
+    }
+
+    const bankSectionHtml = `
+        <div class="bank-section">
+            <div class="bank-header">
+                <h3>🐷 Bank</h3>
+                <button class="btn btn-sm btn-primary" id="recordPayoutBtn">💵 Record Payout</button>
+            </div>
+            <div class="bank-grid">
                 ${kids.map(kidId => {
         const kid = data.kids[kidId];
-        const lastWeekMoney = Storage.getLastWeekEarnings(data, kidId);
         const totalBanked = Storage.getTotalBanked(data, kidId);
+        const totalWithdrawn = Storage.getTotalWithdrawn(data, kidId);
+        const balance = totalBanked;
+        const lastWeekMoney = Storage.getLastWeekEarnings(data, kidId);
         return `
-                        <div class="earnings-card">
-                            <img src="${kid.avatar}" alt="${kid.name}" class="earnings-avatar">
-                            <div class="earnings-info">
-                                <div class="earnings-name">${kid.name}</div>
-                                <div class="earnings-row">
-                                    <span class="earnings-label">Last Week</span>
-                                    <span class="earnings-amount">$${lastWeekMoney.toFixed(2)}</span>
+                        <div class="bank-card">
+                            <img src="${kid.avatar}" alt="${kid.name}" class="bank-avatar">
+                            <div class="bank-info">
+                                <div class="bank-name">${kid.name}</div>
+                                <div class="bank-balance-row">
+                                    <span class="bank-label">Balance</span>
+                                    <span class="bank-balance">$${balance.toFixed(2)}</span>
                                 </div>
-                                <div class="earnings-row">
-                                    <span class="earnings-label">Total Banked</span>
-                                    <span class="earnings-amount total">$${totalBanked.toFixed(2)}</span>
+                                <div class="bank-detail-row">
+                                    <span class="bank-label">Paid Out</span>
+                                    <span class="bank-detail">$${totalWithdrawn.toFixed(2)}</span>
+                                </div>
+                                <div class="bank-detail-row">
+                                    <span class="bank-label">Last Week</span>
+                                    <span class="bank-detail">$${lastWeekMoney.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
                     `;
     }).join('')}
             </div>
+            ${withdrawalHistoryHtml}
         </div>
     `;
 
@@ -216,7 +254,7 @@ function renderDashboard(data, container) {
                 </div>
             </div>
             
-            ${lastWeekEarningsHtml}
+            ${bankSectionHtml}
             
             ${adjustmentsHtml}
         </div>
