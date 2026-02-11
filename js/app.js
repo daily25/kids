@@ -279,9 +279,11 @@ function renderCurrentView() {
     if (currentView === 'tasks') {
         Components.updateSummaryBar(appData, currentKid);
         document.getElementById('summaryBar').style.display = 'flex';
+        document.getElementById('dayHeaders').classList.remove('hidden');
         document.getElementById('dayHeaders').style.display = 'flex';
     } else {
         document.getElementById('summaryBar').style.display = 'none';
+        document.getElementById('dayHeaders').classList.add('hidden');
         document.getElementById('dayHeaders').style.display = 'none';
     }
 }
