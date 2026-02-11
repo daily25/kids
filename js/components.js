@@ -214,7 +214,8 @@ function renderDashboard(data, container) {
                             <img src="${kid.avatar}" alt="${kid.name}" class="bank-avatar">
                             <div class="bank-name">${kid.name}</div>
                             <div class="bank-balance">$${balance.toFixed(2)}</div>
-                            <div class="bank-detail">Paid $${totalWithdrawn.toFixed(2)}</div>
+                            <div class="bank-detail">Last wk $${lastWeekMoney.toFixed(2)}</div>
+                            <div class="bank-detail">Paid out $${totalWithdrawn.toFixed(2)}</div>
                         </div>
                     `;
     }).join('')}
