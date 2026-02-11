@@ -201,10 +201,7 @@ function renderDashboard(data, container) {
 
     const bankSectionHtml = `
         <div class="bank-section">
-            <div class="bank-header">
-                <h3>🐷 Bank</h3>
-                <button class="btn btn-sm btn-primary" id="recordPayoutBtn">💵 Record Payout</button>
-            </div>
+            <h3 class="bank-title">🐷 Bank</h3>
             <div class="bank-grid">
                 ${kids.map(kidId => {
         const kid = data.kids[kidId];
@@ -215,21 +212,9 @@ function renderDashboard(data, container) {
         return `
                         <div class="bank-card">
                             <img src="${kid.avatar}" alt="${kid.name}" class="bank-avatar">
-                            <div class="bank-info">
-                                <div class="bank-name">${kid.name}</div>
-                                <div class="bank-balance-row">
-                                    <span class="bank-label">Balance</span>
-                                    <span class="bank-balance">$${balance.toFixed(2)}</span>
-                                </div>
-                                <div class="bank-detail-row">
-                                    <span class="bank-label">Paid Out</span>
-                                    <span class="bank-detail">$${totalWithdrawn.toFixed(2)}</span>
-                                </div>
-                                <div class="bank-detail-row">
-                                    <span class="bank-label">Last Week</span>
-                                    <span class="bank-detail">$${lastWeekMoney.toFixed(2)}</span>
-                                </div>
-                            </div>
+                            <div class="bank-name">${kid.name}</div>
+                            <div class="bank-balance">$${balance.toFixed(2)}</div>
+                            <div class="bank-detail">Paid $${totalWithdrawn.toFixed(2)}</div>
                         </div>
                     `;
     }).join('')}

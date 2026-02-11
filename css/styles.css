@@ -2075,6 +2075,10 @@ body {
 /* ==========================================
    Bank Section
    ========================================== */
+.header-btn-emoji {
+    font-size: 20px;
+}
+
 .bank-section {
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
@@ -2082,49 +2086,36 @@ body {
     border: 1px solid var(--border-color);
 }
 
-.bank-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.bank-title {
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
     margin-bottom: 14px;
 }
 
-.bank-header h3 {
-    font-size: 1rem;
-    font-weight: 600;
-}
-
-.btn-sm {
-    padding: 8px 14px;
-    font-size: 0.8rem;
-}
-
 .bank-grid {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
 }
 
 .bank-card {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
+    text-align: center;
     background: var(--bg-tertiary);
     border-radius: var(--radius-md);
-    padding: 12px;
+    padding: 14px 8px;
+    border: 1px solid var(--border-color);
 }
 
 .bank-avatar {
-    width: 40px;
-    height: 40px;
+    width: 56px;
+    height: 56px;
     border-radius: var(--radius-full);
     object-fit: cover;
-    flex-shrink: 0;
-}
-
-.bank-info {
-    flex: 1;
-    min-width: 0;
+    margin-bottom: 8px;
 }
 
 .bank-name {
@@ -2133,28 +2124,16 @@ body {
     margin-bottom: 4px;
 }
 
-.bank-balance-row,
-.bank-detail-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.8rem;
-    line-height: 1.6;
-}
-
-.bank-label {
-    color: var(--text-muted);
-}
-
 .bank-balance {
     color: var(--color-green);
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 1.1rem;
 }
 
 .bank-detail {
-    color: var(--text-secondary);
-    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 2px;
 }
 
 /* Withdrawal History */

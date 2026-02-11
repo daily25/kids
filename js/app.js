@@ -183,6 +183,9 @@ function setupEventListeners() {
     document.getElementById('soundsEnabled').addEventListener('change', handleSoundsToggle);
     document.getElementById('soundTaskSelect').addEventListener('change', handleSoundTaskChange);
 
+    // Record Payout button (in header)
+    document.getElementById('recordPayoutBtn').addEventListener('click', openWithdrawalModal);
+
     // Withdrawal modal
     document.getElementById('withdrawalModalClose').addEventListener('click', closeWithdrawalModal);
     withdrawalModal.addEventListener('click', (e) => {
@@ -301,12 +304,6 @@ function renderDashboardView() {
             renderCurrentView();
         });
     });
-
-    // Wire up the Record Payout button (rendered dynamically in dashboard)
-    const payoutBtn = document.getElementById('recordPayoutBtn');
-    if (payoutBtn) {
-        payoutBtn.addEventListener('click', openWithdrawalModal);
-    }
 }
 
 /**
