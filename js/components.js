@@ -229,14 +229,19 @@ function renderDashboard(data, container) {
             <div class="dashboard-summary">
                 <h3>📊 This Week's Summary</h3>
                 <div class="summary-cards">
-                    ${leaderboard.map(kid => `
+                    ${leaderboard.map(kid => {
+        const weeklyBonus = Storage.getWeeklyBonusPoints(data, kid.id);
+        const bonusClass = weeklyBonus > 0 ? 'positive' : (weeklyBonus < 0 ? 'negative' : 'zero');
+        return `
                         <div class="summary-card" data-kid="${kid.id}">
                             <img src="${kid.avatar}" alt="${kid.name}" class="summary-avatar">
                             <div class="summary-name">${kid.name}</div>
                             <div class="summary-money">$${kid.money.toFixed(2)}</div>
                             <div class="summary-max">of $${kid.maxMoney}</div>
+                            <div class="summary-weekly-bonus ${bonusClass}">${weeklyBonus}</div>
                         </div>
-                    `).join('')}
+                    `;
+    }).join('')}
                 </div>
             </div>
             

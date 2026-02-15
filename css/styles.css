@@ -1459,6 +1459,25 @@ body {
     color: var(--text-muted);
 }
 
+.summary-weekly-bonus {
+    margin-top: 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.summary-weekly-bonus.positive {
+    color: var(--color-green);
+}
+
+.summary-weekly-bonus.zero {
+    color: var(--text-primary);
+}
+
+.summary-weekly-bonus.negative {
+    color: var(--color-red);
+}
+
 .summary-badges {
     display: flex;
     gap: 2px;
