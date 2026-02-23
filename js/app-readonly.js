@@ -119,7 +119,7 @@ function renderLevelBadge(level) {
  */
 function renderStreakBadge(streak) {
     if (streak < 1) return '';
-    return `<span class="streak-badge">🔥 ${streak}</span>`;
+    return `<span class="streak-badge">\u{1F525} ${streak}</span>`;
 }
 
 /**
@@ -225,7 +225,7 @@ function setupEventListeners() {
     // Home button (app title)
     document.getElementById('homeBtn').addEventListener('click', () => {
         currentView = 'dashboard';
-        selectedDate = new Date(); // Reset to today
+        selectedDate = new Date();
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         renderCurrentView();
     });
@@ -237,7 +237,7 @@ function setupEventListeners() {
             const kidId = card.dataset.kid;
             currentKid = kidId;
             currentView = 'tasks';
-            selectedDate = new Date(); // Start on today
+            selectedDate = new Date();
 
             // Update nav active state
             document.querySelectorAll('.nav-item').forEach(item => {
@@ -248,23 +248,88 @@ function setupEventListeners() {
         }
     });
 
-    // Day navigator clicks
-    document.getElementById('dayNav').addEventListener('click', (e) => {
-        const dayItem = e.target.closest('.day-nav-item');
-        if (!dayItem || dayItem.classList.contains('future')) return;
+    // Day header clicks - navigate to that day's tasks
+    // Uses the EXISTING dayHeaders element rendered by Components.renderDayHeaders
+    document.getElementById('dayHeaders').addEventListener('click', (e) => {
+        const dayLabel = e.target.closest('.day-label');
+        if (!dayLabel) return;
 
-        const dateStr = dayItem.dataset.date;
-        if (dateStr) {
-            selectedDate = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone issues
-            renderDayNav();
-            renderTasks();
-        }
+        const dateStr = dayLabel.dataset.date;
+        if (!dateStr) return;
+
+        // Don't allow clicking future dates
+        const todayStr = getLocalDateString();
+        if (dateStr > todayStr) return;
+
+        // Set selected date and re-render
+        selectedDate = new Date(dateStr + 'T12:00:00');
+        highlightSelectedDay();
+        renderTasks();
     });
 
     // Reload button - force refresh the page
     document.getElementById('reloadBtn').addEventListener('click', () => {
-        window.location.reload(true); // Force reload from server
+        window.location.reload(true);
     });
+}
+
+/**
+ * Highlight the selected day in the day headers
+ */
+function highlightSelectedDay() {
+    const selectedStr = getLocalDateString(selectedDate);
+    const todayStr = getLocalDateString();
+    const dayHeaders = document.getElementById('dayHeaders');
+
+    // Remove all existing highlights
+    dayHeaders.querySelectorAll('.day-label').forEach(label => {
+        label.classList.remove('today', 'selected-day');
+
+        const labelDate = label.dataset.date;
+        if (labelDate === todayStr) {
+            // Today always gets the 'today' class
+            label.classList.add('today');
+        }
+        if (labelDate === selectedStr && labelDate !== todayStr) {
+            // Selected day (if not today) gets a 'selected-day' class
+            label.classList.add('selected-day');
+        }
+        if (labelDate === selectedStr && labelDate === todayStr) {
+            // If selected day IS today, just keep 'today'
+            label.classList.add('today');
+        }
+    });
+
+    // Add pointer cursor to past/today days
+    dayHeaders.querySelectorAll('.day-label').forEach(label => {
+        const labelDate = label.dataset.date;
+        if (labelDate && labelDate <= todayStr) {
+            label.style.cursor = 'pointer';
+        }
+    });
+
+    // Inject selected-day style if not already present
+    if (!document.getElementById('selected-day-style')) {
+        const style = document.createElement('style');
+        style.id = 'selected-day-style';
+        style.textContent = `
+            .day-label.selected-day {
+                color: var(--color-yellow, #fbbf24) !important;
+                font-weight: 700 !important;
+                background: rgba(251, 191, 36, 0.15) !important;
+                border-radius: 6px !important;
+                padding: 4px 8px !important;
+            }
+            .day-label {
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .day-label:active {
+                transform: scale(0.92);
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 /**
@@ -294,15 +359,11 @@ function handleNavClick(e) {
 function renderCurrentView() {
     const summaryBar = document.getElementById('summaryBar');
     const dayHeaders = document.getElementById('dayHeaders');
-    const dayNav = document.getElementById('dayNav');
-    const viewingLabel = document.getElementById('viewingLabel');
 
     if (currentView === 'dashboard') {
         // Hide kid-specific UI
         summaryBar.style.display = 'none';
         dayHeaders.style.display = 'none';
-        dayNav.style.display = 'none';
-        viewingLabel.style.display = 'none';
 
         // Render dashboard
         renderDashboard();
@@ -310,10 +371,9 @@ function renderCurrentView() {
         // Show kid-specific UI
         summaryBar.style.display = 'flex';
         dayHeaders.style.display = 'flex';
-        dayNav.style.display = 'flex';
 
-        // Render day nav + tasks
-        renderDayNav();
+        // Highlight selected day + render tasks
+        highlightSelectedDay();
         renderTasks();
     }
 }
@@ -327,89 +387,15 @@ function renderDashboard() {
 }
 
 /**
- * Render the day navigator strip showing each day of the current week
- */
-function renderDayNav() {
-    const dayNav = document.getElementById('dayNav');
-    const viewingLabel = document.getElementById('viewingLabel');
-    const today = new Date();
-    const todayStr = getLocalDateString(today);
-    const selectedStr = getLocalDateString(selectedDate);
-
-    // Get current week days (Mon-Sun)
-    const weekStart = Storage.getWeekStart(today);
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(weekStart);
-        d.setDate(weekStart.getDate() + i);
-        weekDays.push(d);
-    }
-
-    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const kid = appData.kids[currentKid];
-
-    dayNav.innerHTML = weekDays.map((date, i) => {
-        const dateStr = getLocalDateString(date);
-        const isToday = dateStr === todayStr;
-        const isSelected = dateStr === selectedStr;
-        const isFuture = dateStr > todayStr;
-        const dayNum = date.getDate();
-
-        // Calculate completion status for this day
-        let statusEmoji = '';
-        if (!isFuture && kid && kid.tasks) {
-            const dayOfWeek = date.getDay();
-            const activeTasks = kid.tasks.filter(t => t.activeDays && t.activeDays.includes(dayOfWeek) && !t.bonusOnly);
-            if (activeTasks.length > 0) {
-                const completedCount = activeTasks.filter(t => Storage.isTaskCompleted(appData, currentKid, t.id, date)).length;
-                if (completedCount === activeTasks.length) {
-                    statusEmoji = '✅';
-                } else if (completedCount > 0) {
-                    statusEmoji = `${completedCount}/${activeTasks.length}`;
-                } else if (dateStr < todayStr) {
-                    statusEmoji = '❌';
-                }
-            }
-        }
-
-        const classes = ['day-nav-item'];
-        if (isSelected) classes.push('active');
-        if (isToday) classes.push('today');
-        if (isFuture) classes.push('future');
-
-        return `
-            <button class="${classes.join(' ')}" data-date="${dateStr}">
-                <span class="day-nav-label">${dayLabels[i]}</span>
-                <span class="day-nav-date">${dayNum}</span>
-                <span class="day-nav-status">${statusEmoji}</span>
-            </button>
-        `;
-    }).join('');
-
-    // Update viewing label
-    const isViewingToday = selectedStr === todayStr;
-    if (isViewingToday) {
-        viewingLabel.style.display = 'none';
-    } else {
-        viewingLabel.style.display = 'block';
-        viewingLabel.className = 'viewing-label is-past';
-        const options = { weekday: 'long', month: 'long', day: 'numeric' };
-        viewingLabel.textContent = `📅 Viewing: ${selectedDate.toLocaleDateString('en-US', options)}`;
-    }
-}
-
-/**
  * Render tasks for current kid on the selected date (view-only)
  */
 function renderTasks() {
-    console.log('renderTasks called, currentKid:', currentKid, 'selectedDate:', getLocalDateString(selectedDate));
-
     const kid = appData.kids[currentKid];
     if (!kid) {
         console.error('Kid not found:', currentKid);
         taskList.innerHTML = `
             <div class="empty-state">
-                <span class="empty-icon">⚠️</span>
+                <span class="empty-icon">\u26a0\ufe0f</span>
                 <p>Could not load data for ${currentKid}</p>
             </div>
         `;
@@ -425,9 +411,14 @@ function renderTasks() {
     const viewDateStr = getLocalDateString(viewDate);
     const isViewingToday = viewDateStr === todayStr;
 
-    // Update summary bar
-    document.getElementById('totalPoints').textContent = `${Storage.calculateWeekPoints(appData, currentKid, appData.settings.weekStart).earned}/${Storage.calculateWeekPoints(appData, currentKid, appData.settings.weekStart).possible}`;
-    document.getElementById('weeklyMoney').textContent = formatMoney(Storage.calculateWeeklyMoney(appData, currentKid));
+    // Update summary bar with weekly totals
+    const weeklyMoney = Storage.calculateWeeklyMoney(appData, currentKid);
+    document.getElementById('weeklyMoney').textContent = formatMoney(weeklyMoney);
+
+    // Calculate earned/possible for summary
+    const currentWeek = getWeekNumber(new Date());
+    const stats = calculateKidStats(appData, currentKid, currentWeek);
+    document.getElementById('totalPoints').textContent = `${stats.weeklyCompleted}/${stats.weeklyTotal}`;
 
     // Get tasks active on the selected day
     const dayTasks = kid.tasks.filter(task => task.activeDays && task.activeDays.includes(dayOfWeek));
@@ -435,7 +426,7 @@ function renderTasks() {
     if (dayTasks.length === 0) {
         taskList.innerHTML = `
             <div class="empty-state">
-                <span class="empty-icon">${isViewingToday ? '📋' : '😴'}</span>
+                <span class="empty-icon">${isViewingToday ? '\ud83d\udccb' : '\ud83d\ude34'}</span>
                 <p>${isViewingToday ? 'No tasks for today' : 'No tasks on this day'}</p>
             </div>
         `;
@@ -444,6 +435,15 @@ function renderTasks() {
 
     // Clear task list
     taskList.innerHTML = '';
+
+    // Add "Viewing [date]" label when looking at a past day
+    if (!isViewingToday) {
+        const label = document.createElement('div');
+        label.style.cssText = 'text-align:center;padding:8px;font-size:0.8rem;font-weight:600;color:#fbbf24;background:rgba(251,191,36,0.08);border-radius:8px;margin-bottom:12px;';
+        const options = { weekday: 'long', month: 'short', day: 'numeric' };
+        label.textContent = '\ud83d\udcc5 ' + selectedDate.toLocaleDateString('en-US', options);
+        taskList.appendChild(label);
+    }
 
     // Render each task with the selected date's completion status
     dayTasks.forEach(task => {
@@ -461,7 +461,7 @@ function renderTasks() {
                 </div>
                 <div class="task-info">
                     <div class="task-name">${escapeHtml(task.name)}</div>
-                    <div class="task-points">${task.points} points${task.bonusOnly ? ' <span class="bonus-badge">⭐ Bonus</span>' : ''}</div>
+                    <div class="task-points">${task.points} points${task.bonusOnly ? ' <span class="bonus-badge">\u2b50 Bonus</span>' : ''}</div>
                 </div>
                 <div class="task-toggle ${isCompleted ? 'completed' : ''}" 
                         style="${isCompleted ? `border-color: ${task.color}; background: ${dimColor};` : ''}">
@@ -525,15 +525,15 @@ function updateSyncIndicator(status) {
 
     switch (status) {
         case 'synced':
-            indicator.textContent = '☁️';
+            indicator.textContent = '\u2601\ufe0f';
             indicator.title = 'Connected to cloud';
             break;
         case 'syncing':
-            indicator.textContent = '🔄';
+            indicator.textContent = '\ud83d\udd04';
             indicator.title = 'Syncing...';
             break;
         case 'offline':
-            indicator.textContent = '📴';
+            indicator.textContent = '\ud83d\udcf4';
             indicator.title = 'Offline';
             break;
     }
