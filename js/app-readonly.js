@@ -47,114 +47,9 @@ function formatMoney(amount) {
     return '$' + amount.toFixed(2);
 }
 
-/**
- * Calculate kid stats for current week
- */
-function calculateKidStats(data, kidId, currentWeek) {
-    const kid = data.kids[kidId];
-    let weeklyCompleted = 0;
-    let weeklyTotal = 0;
-    let lifetimePoints = 0;
-    let streak = 0;
-    let level = 1;
-
-    // Calculate weekly stats
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        const dateStr = getLocalDateString(date);
-        const dayOfWeek = date.getDay();
-
-        if (getWeekNumber(date) !== currentWeek) continue;
-
-        kid.tasks.forEach(task => {
-            if (task.activeDays.includes(dayOfWeek)) {
-                weeklyTotal++;
-                if (kid.history[dateStr]?.tasks?.[task.id]?.completed) {
-                    weeklyCompleted++;
-                }
-            }
-        });
-    }
-
-    // Calculate lifetime points from history
-    Object.entries(kid.history || {}).forEach(([dateStr, dayData]) => {
-        if (dayData.tasks) {
-            Object.entries(dayData.tasks).forEach(([taskId, taskData]) => {
-                if (taskData.completed) {
-                    const task = kid.tasks.find(t => t.id === taskId);
-                    if (task) lifetimePoints += task.points;
-                }
-            });
-        }
-    });
-
-    // Add bonus/penalty points
-    if (data.pointsLog) {
-        data.pointsLog.filter(p => p.kidId === kidId).forEach(entry => {
-            lifetimePoints += entry.type === 'bonus' ? entry.points : -entry.points;
-        });
-    }
-
-    // Calculate level (every 50 points = 1 level)
-    level = Math.floor(lifetimePoints / 50) + 1;
-    if (level < 1) level = 1;
-
-    // Calculate streak
-    streak = kid.streak || 0;
-
-    return { weeklyCompleted, weeklyTotal, lifetimePoints, level, streak };
-}
-
-/**
- * Render level badge
- */
-function renderLevelBadge(level) {
-    return `<span class="level-badge">Lvl ${level}</span>`;
-}
-
-/**
- * Render streak badge
- */
-function renderStreakBadge(streak) {
-    if (streak < 1) return '';
-    return `<span class="streak-badge">\u{1F525} ${streak}</span>`;
-}
-
-/**
- * Build dot matrix HTML for a task
- */
-function buildDotMatrix(history, taskId, activeDays) {
-    const days = [];
-    const today = new Date();
-
-    for (let i = 24; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        days.push(date);
-    }
-
-    return days.map(date => {
-        const dateStr = getLocalDateString(date);
-        const dayOfWeek = date.getDay();
-        const isActive = activeDays.includes(dayOfWeek);
-        const isCompleted = history[dateStr]?.tasks?.[taskId]?.completed || false;
-        const isFuture = date > today;
-        const isToday = dateStr === getLocalDateString(today);
-
-        if (!isActive) {
-            return `<span class="dot inactive"></span>`;
-        }
-        if (isFuture) {
-            return `<span class="dot future"></span>`;
-        }
-        if (isCompleted) {
-            return `<span class="dot completed"></span>`;
-        }
-        return `<span class="dot incomplete"></span>`;
-    }).join('');
-}
+// NOTE: Weekly stats use Storage.calculateWeekPoints() which uses the correct
+// completions key format (kidId_taskId_YYYY-MM-DD). Do NOT use kid.history
+// as that format no longer exists in the data.
 
 /**
  * Update navigation money display
@@ -411,14 +306,19 @@ function renderTasks() {
     const viewDateStr = getLocalDateString(viewDate);
     const isViewingToday = viewDateStr === todayStr;
 
-    // Update summary bar with weekly totals
-    const weeklyMoney = Storage.calculateWeeklyMoney(appData, currentKid);
-    document.getElementById('weeklyMoney').textContent = formatMoney(weeklyMoney);
+    // Update summary bar with weekly totals using Storage functions
+    // (these use the correct completions key format)
+    try {
+        const weeklyMoney = Storage.calculateWeeklyMoney(appData, currentKid);
+        document.getElementById('weeklyMoney').textContent = formatMoney(weeklyMoney);
 
-    // Calculate earned/possible for summary
-    const currentWeek = getWeekNumber(new Date());
-    const stats = calculateKidStats(appData, currentKid, currentWeek);
-    document.getElementById('totalPoints').textContent = `${stats.weeklyCompleted}/${stats.weeklyTotal}`;
+        const weekPoints = Storage.calculateWeekPoints(appData, currentKid, appData.settings.weekStart);
+        document.getElementById('totalPoints').textContent = `${weekPoints.earned}/${weekPoints.possible}`;
+    } catch (e) {
+        console.error('Error calculating stats:', e);
+        document.getElementById('totalPoints').textContent = '--';
+        document.getElementById('weeklyMoney').textContent = '$--';
+    }
 
     // Get tasks active on the selected day
     const dayTasks = kid.tasks.filter(task => task.activeDays && task.activeDays.includes(dayOfWeek));
