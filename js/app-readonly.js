@@ -13,6 +13,7 @@ let selectedDate = new Date(); // The date being viewed (defaults to today)
 // DOM Elements
 const taskList = document.getElementById('taskList');
 const bottomNav = document.getElementById('bottomNav');
+const dayViewModal = document.getElementById('dayViewModal');
 
 // ============================================
 // HELPER FUNCTIONS (self-contained)
@@ -152,7 +153,7 @@ function setupEventListeners() {
         }
     });
 
-    // Day header clicks - navigate to that day's tasks
+    // Day header clicks - open day view modal
     document.getElementById('dayHeaders').addEventListener('click', (e) => {
         const dayLabel = e.target.closest('.day-label');
         if (!dayLabel) return;
@@ -160,14 +161,18 @@ function setupEventListeners() {
         const dateStr = dayLabel.dataset.date;
         if (!dateStr) return;
 
-        // Don't allow clicking future dates
-        const todayStr = getLocalDateString();
-        if (dateStr > todayStr) return;
+        openDayViewModal(new Date(dateStr + 'T12:00:00'));
+    });
 
-        // Set selected date and re-render
-        selectedDate = new Date(dateStr + 'T12:00:00');
-        renderWeekNavHeaders();
-        renderTasks();
+    // Day view modal close
+    document.getElementById('dayViewClose').addEventListener('click', closeDayViewModal);
+    dayViewModal.addEventListener('click', (e) => {
+        if (e.target === dayViewModal) closeDayViewModal();
+    });
+
+    // Escape key closes modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDayViewModal();
     });
 
     // Reload button - force refresh the page
@@ -233,6 +238,85 @@ function highlightSelectedDay() {
         `;
         document.head.appendChild(style);
     }
+}
+
+/**
+ * Open day view modal for a specific date (read-only)
+ */
+function openDayViewModal(date) {
+    const today = new Date();
+    const isToday = getLocalDateString(today) === getLocalDateString(date);
+
+    const options = { weekday: 'long', month: 'short', day: 'numeric' };
+    const title = isToday ? "Today's Tasks" : date.toLocaleDateString('en-US', options);
+    document.getElementById('dayViewTitle').textContent = title;
+
+    const content = document.getElementById('dayViewContent');
+    const kids = currentView === 'tasks' ? [currentKid] : ['oliver', 'miles', 'zander'];
+
+    let html = `
+        <div class="day-view-summary">
+            <div class="day-view-date">${date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        </div>
+    `;
+
+    kids.forEach(kidId => {
+        const kid = appData.kids[kidId];
+        if (!kid || !kid.tasks) return;
+
+        const dayOfWeek = date.getDay();
+        const activeTasks = kid.tasks.filter(task => {
+            const activeDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
+            return activeDays.includes(dayOfWeek);
+        });
+
+        if (activeTasks.length === 0) return;
+
+        const points = Storage.calculateDayPoints(appData, kidId, date);
+
+        html += `
+            <div class="day-kid-section">
+                <div class="day-kid-header">
+                    <img src="${kid.avatar}" alt="${escapeHtml(kid.name)}" class="day-kid-avatar">
+                    <span class="day-kid-name">${escapeHtml(kid.name)}</span>
+                    <span class="day-kid-points">${points.earned}/${points.possible} pts</span>
+                </div>
+                <div class="day-task-list">
+        `;
+
+        activeTasks.forEach(task => {
+            const isCompleted = Storage.isTaskCompleted(appData, kidId, task.id, date);
+            const dimColor = Components.getDimColor(task.color);
+
+            html += `
+                <div class="day-task-item" style="cursor:default;">
+                    <div class="day-task-icon" style="background: ${dimColor};">${task.icon}</div>
+                    <div class="day-task-info">
+                        <div class="day-task-name">${escapeHtml(task.name)}</div>
+                        <div class="day-task-points">${task.points} points</div>
+                    </div>
+                    <div class="day-task-status ${isCompleted ? 'completed' : 'incomplete'}">
+                        ${isCompleted ? '✓' : '✗'}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    content.innerHTML = html;
+    dayViewModal.classList.add('active');
+}
+
+/**
+ * Close day view modal
+ */
+function closeDayViewModal() {
+    dayViewModal.classList.remove('active');
 }
 
 /**

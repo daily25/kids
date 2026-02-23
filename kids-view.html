@@ -57,7 +57,7 @@
                 </svg>
             </button>
             <h1 class="app-title cursor-pointer" id="homeBtn"><span class="title-accent">Kids</span>Tasks</h1>
-            <span class="app-version">v0.63</span>
+            <span class="app-version">v0.64</span>
             <span class="readonly-badge">View Only</span>
             <div class="header-right">
                 <!-- Cloud sync indicator -->
@@ -87,6 +87,19 @@
             <!-- Tasks will be rendered here -->
         </main>
 
+        <!-- Day View Modal -->
+        <div class="modal-overlay" id="dayViewModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 id="dayViewTitle">Today's Tasks</h2>
+                    <button type="button" class="modal-close" id="dayViewClose">&times;</button>
+                </div>
+                <div class="day-view-content" id="dayViewContent">
+                    <!-- Day tasks rendered here -->
+                </div>
+            </div>
+        </div>
+
         <!-- Bottom Navigation -->
         <nav class="bottom-nav" id="bottomNav">
             <button class="nav-item" data-kid="oliver">
@@ -114,7 +127,7 @@
     <script src="js/firebase.js?v=2"></script>
     <script src="js/storage.js?v=12"></script>
     <script src="js/components.js?v=12"></script>
-    <script src="js/app-readonly.js?v=20"></script>
+    <script src="js/app-readonly.js?v=21"></script>
 </body>
 
 </html>
