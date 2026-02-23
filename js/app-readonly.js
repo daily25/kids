@@ -8,6 +8,7 @@
 let appData = null;
 let currentKid = 'oliver';
 let currentView = 'dashboard';
+let selectedDate = new Date(); // The date being viewed (defaults to today)
 
 // DOM Elements
 const taskList = document.getElementById('taskList');
@@ -224,6 +225,7 @@ function setupEventListeners() {
     // Home button (app title)
     document.getElementById('homeBtn').addEventListener('click', () => {
         currentView = 'dashboard';
+        selectedDate = new Date(); // Reset to today
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         renderCurrentView();
     });
@@ -235,6 +237,7 @@ function setupEventListeners() {
             const kidId = card.dataset.kid;
             currentKid = kidId;
             currentView = 'tasks';
+            selectedDate = new Date(); // Start on today
 
             // Update nav active state
             document.querySelectorAll('.nav-item').forEach(item => {
@@ -242,6 +245,19 @@ function setupEventListeners() {
             });
 
             renderCurrentView();
+        }
+    });
+
+    // Day navigator clicks
+    document.getElementById('dayNav').addEventListener('click', (e) => {
+        const dayItem = e.target.closest('.day-nav-item');
+        if (!dayItem || dayItem.classList.contains('future')) return;
+
+        const dateStr = dayItem.dataset.date;
+        if (dateStr) {
+            selectedDate = new Date(dateStr + 'T12:00:00'); // Noon to avoid timezone issues
+            renderDayNav();
+            renderTasks();
         }
     });
 
@@ -262,6 +278,7 @@ function handleNavClick(e) {
     if (kidId) {
         currentKid = kidId;
         currentView = 'tasks';
+        selectedDate = new Date(); // Reset to today when switching kids
 
         // Update active state
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
@@ -277,11 +294,15 @@ function handleNavClick(e) {
 function renderCurrentView() {
     const summaryBar = document.getElementById('summaryBar');
     const dayHeaders = document.getElementById('dayHeaders');
+    const dayNav = document.getElementById('dayNav');
+    const viewingLabel = document.getElementById('viewingLabel');
 
     if (currentView === 'dashboard') {
         // Hide kid-specific UI
         summaryBar.style.display = 'none';
         dayHeaders.style.display = 'none';
+        dayNav.style.display = 'none';
+        viewingLabel.style.display = 'none';
 
         // Render dashboard
         renderDashboard();
@@ -289,8 +310,10 @@ function renderCurrentView() {
         // Show kid-specific UI
         summaryBar.style.display = 'flex';
         dayHeaders.style.display = 'flex';
+        dayNav.style.display = 'flex';
 
-        // Render tasks
+        // Render day nav + tasks
+        renderDayNav();
         renderTasks();
     }
 }
@@ -304,11 +327,82 @@ function renderDashboard() {
 }
 
 /**
- * Render tasks for current kid (view-only)
+ * Render the day navigator strip showing each day of the current week
+ */
+function renderDayNav() {
+    const dayNav = document.getElementById('dayNav');
+    const viewingLabel = document.getElementById('viewingLabel');
+    const today = new Date();
+    const todayStr = getLocalDateString(today);
+    const selectedStr = getLocalDateString(selectedDate);
+
+    // Get current week days (Mon-Sun)
+    const weekStart = Storage.getWeekStart(today);
+    const weekDays = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        weekDays.push(d);
+    }
+
+    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const kid = appData.kids[currentKid];
+
+    dayNav.innerHTML = weekDays.map((date, i) => {
+        const dateStr = getLocalDateString(date);
+        const isToday = dateStr === todayStr;
+        const isSelected = dateStr === selectedStr;
+        const isFuture = dateStr > todayStr;
+        const dayNum = date.getDate();
+
+        // Calculate completion status for this day
+        let statusEmoji = '';
+        if (!isFuture && kid && kid.tasks) {
+            const dayOfWeek = date.getDay();
+            const activeTasks = kid.tasks.filter(t => t.activeDays && t.activeDays.includes(dayOfWeek) && !t.bonusOnly);
+            if (activeTasks.length > 0) {
+                const completedCount = activeTasks.filter(t => Storage.isTaskCompleted(appData, currentKid, t.id, date)).length;
+                if (completedCount === activeTasks.length) {
+                    statusEmoji = '✅';
+                } else if (completedCount > 0) {
+                    statusEmoji = `${completedCount}/${activeTasks.length}`;
+                } else if (dateStr < todayStr) {
+                    statusEmoji = '❌';
+                }
+            }
+        }
+
+        const classes = ['day-nav-item'];
+        if (isSelected) classes.push('active');
+        if (isToday) classes.push('today');
+        if (isFuture) classes.push('future');
+
+        return `
+            <button class="${classes.join(' ')}" data-date="${dateStr}">
+                <span class="day-nav-label">${dayLabels[i]}</span>
+                <span class="day-nav-date">${dayNum}</span>
+                <span class="day-nav-status">${statusEmoji}</span>
+            </button>
+        `;
+    }).join('');
+
+    // Update viewing label
+    const isViewingToday = selectedStr === todayStr;
+    if (isViewingToday) {
+        viewingLabel.style.display = 'none';
+    } else {
+        viewingLabel.style.display = 'block';
+        viewingLabel.className = 'viewing-label is-past';
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        viewingLabel.textContent = `📅 Viewing: ${selectedDate.toLocaleDateString('en-US', options)}`;
+    }
+}
+
+/**
+ * Render tasks for current kid on the selected date (view-only)
  */
 function renderTasks() {
-    console.log('renderTasks called, currentKid:', currentKid);
-    console.log('appData.kids keys:', Object.keys(appData.kids || {}));
+    console.log('renderTasks called, currentKid:', currentKid, 'selectedDate:', getLocalDateString(selectedDate));
 
     const kid = appData.kids[currentKid];
     if (!kid) {
@@ -324,32 +418,25 @@ function renderTasks() {
 
     // Ensure kid has required properties
     if (!kid.tasks) kid.tasks = [];
-    if (!kid.history) kid.history = {};
 
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const currentWeek = getWeekNumber(today);
+    const viewDate = selectedDate;
+    const dayOfWeek = viewDate.getDay();
     const todayStr = getLocalDateString();
-
-    console.log('Today:', todayStr, 'Day of week:', dayOfWeek, 'Tasks count:', kid.tasks.length);
-
-    // Calculate stats
-    const stats = calculateKidStats(appData, currentKid, currentWeek);
+    const viewDateStr = getLocalDateString(viewDate);
+    const isViewingToday = viewDateStr === todayStr;
 
     // Update summary bar
-    document.getElementById('totalPoints').textContent = `${stats.weeklyCompleted}/${stats.weeklyTotal}`;
+    document.getElementById('totalPoints').textContent = `${Storage.calculateWeekPoints(appData, currentKid, appData.settings.weekStart).earned}/${Storage.calculateWeekPoints(appData, currentKid, appData.settings.weekStart).possible}`;
     document.getElementById('weeklyMoney').textContent = formatMoney(Storage.calculateWeeklyMoney(appData, currentKid));
 
-    // Get today's tasks
-    const todaysTasks = kid.tasks.filter(task => task.activeDays && task.activeDays.includes(dayOfWeek));
+    // Get tasks active on the selected day
+    const dayTasks = kid.tasks.filter(task => task.activeDays && task.activeDays.includes(dayOfWeek));
 
-    console.log('Tasks for today:', todaysTasks.length);
-
-    if (todaysTasks.length === 0) {
+    if (dayTasks.length === 0) {
         taskList.innerHTML = `
             <div class="empty-state">
-                <span class="empty-icon">📋</span>
-                <p>No tasks for today</p>
+                <span class="empty-icon">${isViewingToday ? '📋' : '😴'}</span>
+                <p>${isViewingToday ? 'No tasks for today' : 'No tasks on this day'}</p>
             </div>
         `;
         return;
@@ -358,16 +445,33 @@ function renderTasks() {
     // Clear task list
     taskList.innerHTML = '';
 
-    // Use Components.renderTaskCard for proper styling
-    // Pass no-op functions to disable interactions
-    todaysTasks.forEach(task => {
-        const card = Components.renderTaskCard(
-            task,
-            currentKid,
-            appData,
-            () => { }, // No-op for toggle
-            () => { }  // No-op for edit
-        );
+    // Render each task with the selected date's completion status
+    dayTasks.forEach(task => {
+        const isCompleted = Storage.isTaskCompleted(appData, currentKid, task.id, viewDate);
+        const dimColor = Components.getDimColor(task.color);
+
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        card.dataset.taskId = task.id;
+
+        card.innerHTML = `
+            <div class="task-header">
+                <div class="task-icon" style="background: ${dimColor};">
+                    ${task.icon}
+                </div>
+                <div class="task-info">
+                    <div class="task-name">${escapeHtml(task.name)}</div>
+                    <div class="task-points">${task.points} points${task.bonusOnly ? ' <span class="bonus-badge">⭐ Bonus</span>' : ''}</div>
+                </div>
+                <div class="task-toggle ${isCompleted ? 'completed' : ''}" 
+                        style="${isCompleted ? `border-color: ${task.color}; background: ${dimColor};` : ''}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="${isCompleted ? task.color : 'transparent'}" stroke-width="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+            </div>
+        `;
+
         taskList.appendChild(card);
     });
 }
