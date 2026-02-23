@@ -300,6 +300,7 @@ function renderCurrentView() {
     } else {
         // Show kid-specific UI
         summaryBar.style.display = 'flex';
+        dayHeaders.classList.remove('hidden');
         dayHeaders.style.display = 'flex';
 
         // Render week nav headers (highlights selected day) + render tasks
