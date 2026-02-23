@@ -44,44 +44,13 @@
             display: none !important;
         }
 
-        /* Week navigation layout */
-        .day-headers {
-            justify-content: space-between;
-            padding: 0 8px;
-        }
-
-        .week-nav-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary, #9ca3af);
-            font-size: 1.6rem;
-            line-height: 1;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            cursor: pointer;
-            flex-shrink: 0;
-            padding: 0;
-        }
-
-        .week-nav-btn:disabled {
-            opacity: 0.15;
-            cursor: default;
-        }
-
-        .week-nav-btn:not(:disabled):active {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .week-nav-days {
-            flex: 1;
+        /* Rolling 7-day headers */
+        .rolling-days {
+            width: 100%;
             justify-content: space-around;
         }
 
-        .week-nav-days .day-label {
+        .rolling-days .day-label {
             width: auto;
             flex: 1;
             max-width: 36px;
@@ -99,7 +68,7 @@
                 </svg>
             </button>
             <h1 class="app-title cursor-pointer" id="homeBtn"><span class="title-accent">Kids</span>Tasks</h1>
-            <span class="app-version">v0.60</span>
+            <span class="app-version">v0.61</span>
             <span class="readonly-badge">View Only</span>
             <div class="header-right">
                 <!-- Cloud sync indicator -->
@@ -156,7 +125,7 @@
     <script src="js/firebase.js?v=2"></script>
     <script src="js/storage.js?v=12"></script>
     <script src="js/components.js?v=12"></script>
-    <script src="js/app-readonly.js?v=17"></script>
+    <script src="js/app-readonly.js?v=18"></script>
 </body>
 
 </html>

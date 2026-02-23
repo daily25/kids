@@ -9,7 +9,6 @@ let appData = null;
 let currentKid = 'oliver';
 let currentView = 'dashboard';
 let selectedDate = new Date(); // The date being viewed (defaults to today)
-let weekOffset = 0; // 0 = current week, -1 = last week, etc.
 
 // DOM Elements
 const taskList = document.getElementById('taskList');
@@ -53,85 +52,39 @@ function formatMoney(amount) {
 // as that format no longer exists in the data.
 
 /**
- * Get week start date for a given offset from the current week
- */
-function getWeekStartForOffset(offset) {
-    const currentWeekStart = Storage.getWeekStart(new Date());
-    const d = new Date(currentWeekStart);
-    d.setDate(d.getDate() + offset * 7);
-    return d;
-}
-
-/**
- * Render day headers with prev/next week navigation arrows
+ * Render day headers showing the last 7 days (6 days ago → today)
+ * Always has past days to click regardless of day of week
  */
 function renderWeekNavHeaders() {
     const container = document.getElementById('dayHeaders');
-    const weekStart = getWeekStartForOffset(weekOffset);
+    const today = new Date();
+    const todayStr = getLocalDateString(today);
+    const selectedStr = getLocalDateString(selectedDate);
+    const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+    // Build last 7 days oldest → today
     const days = [];
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(weekStart);
-        d.setDate(weekStart.getDate() + i);
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
         days.push(d);
     }
 
-    const todayStr = getLocalDateString();
-    const selectedStr = getLocalDateString(selectedDate);
-    const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-    const canGoPrev = weekOffset > -4;
-    const canGoNext = weekOffset < 0;
-
     container.innerHTML = `
-        <button type="button" class="week-nav-btn" id="prevWeekBtn" ${canGoPrev ? '' : 'disabled'} aria-label="Previous week">&#8249;</button>
-        <div class="days-container week-nav-days">
+        <div class="days-container rolling-days">
             ${days.map(date => {
                 const dateStr = getLocalDateString(date);
                 const isToday = dateStr === todayStr;
-                const isFuture = dateStr > todayStr;
                 const isSelected = dateStr === selectedStr;
                 let cls = 'day-label';
                 if (isToday) cls += ' today';
                 if (isSelected && !isToday) cls += ' selected-day';
-                return `<div class="${cls}" data-date="${dateStr}" ${isFuture ? 'style="opacity:0.35;pointer-events:none;cursor:default;"' : ''}>
+                return `<div class="${cls}" data-date="${dateStr}">
                     ${dayNames[date.getDay()]}<br>${date.getDate()}
                 </div>`;
             }).join('')}
         </div>
-        <button type="button" class="week-nav-btn" id="nextWeekBtn" ${canGoNext ? '' : 'disabled'} aria-label="Next week">&#8250;</button>
     `;
-
-    // Attach prev/next click handlers
-    const prevBtn = document.getElementById('prevWeekBtn');
-    const nextBtn = document.getElementById('nextWeekBtn');
-
-    if (prevBtn && canGoPrev) {
-        prevBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            weekOffset--;
-            // Select the last non-future day in the new week
-            const newWeekStart = getWeekStartForOffset(weekOffset);
-            const newWeekEnd = new Date(newWeekStart);
-            newWeekEnd.setDate(newWeekStart.getDate() + 6);
-            const todayDate = new Date(todayStr + 'T12:00:00');
-            selectedDate = newWeekEnd > todayDate ? todayDate : newWeekEnd;
-            renderWeekNavHeaders();
-            renderTasks();
-        });
-    }
-
-    if (nextBtn && canGoNext) {
-        nextBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            weekOffset++;
-            if (weekOffset === 0) {
-                selectedDate = new Date(); // Back to today
-            } else {
-                selectedDate = getWeekStartForOffset(weekOffset);
-            }
-            renderWeekNavHeaders();
-            renderTasks();
-        });
-    }
 }
 
 /**
@@ -204,7 +157,6 @@ function setupEventListeners() {
     document.getElementById('homeBtn').addEventListener('click', () => {
         currentView = 'dashboard';
         selectedDate = new Date();
-        weekOffset = 0;
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         renderCurrentView();
     });
@@ -217,7 +169,6 @@ function setupEventListeners() {
             currentKid = kidId;
             currentView = 'tasks';
             selectedDate = new Date();
-            weekOffset = 0;
 
             // Update nav active state
             document.querySelectorAll('.nav-item').forEach(item => {
@@ -323,7 +274,6 @@ function handleNavClick(e) {
         currentKid = kidId;
         currentView = 'tasks';
         selectedDate = new Date(); // Reset to today when switching kids
-        weekOffset = 0;
 
         // Update active state
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
