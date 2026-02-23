@@ -2235,6 +2235,8 @@ body {
     flex-shrink: 0;
     padding-top: 16px;
     border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 10px;
 }
 
 .btn-large {
@@ -2446,53 +2448,51 @@ body {
     font-size: 0.9rem;
 }
 
-/* Week selector for past reviews */
-.review-week-selector {
+/* Week navigation for reviews (prev/next) */
+.review-week-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 8px 12px;
     margin-bottom: 16px;
     background: var(--bg-tertiary);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
 }
 
-.review-week-selector label {
+.review-week-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-secondary);
-    white-space: nowrap;
+    color: var(--text-primary);
+    text-align: center;
+    flex: 1;
 }
 
-.review-week-selector select {
-    flex: 1;
+.review-nav-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: var(--bg-primary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    padding: 6px 10px;
-    border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-    font-weight: 500;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
     cursor: pointer;
-    max-width: 200px;
+    transition: all 0.15s;
+    flex-shrink: 0;
 }
 
-.review-history-btn {
-    font-size: 0.75rem !important;
-    padding: 4px 12px !important;
-    background: var(--bg-primary) !important;
-    color: var(--text-secondary) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 16px !important;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
+.review-nav-btn:hover:not(:disabled) {
+    background: var(--color-purple-dim, rgba(139,92,246,0.15));
+    border-color: var(--color-purple, #8b5cf6);
+    color: var(--color-purple, #8b5cf6);
 }
 
-.review-history-btn:hover {
-    background: var(--color-purple-dim) !important;
-    color: var(--color-purple) !important;
-    border-color: var(--color-purple) !important;
+.review-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
 }
+

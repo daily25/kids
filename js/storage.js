@@ -988,11 +988,29 @@ function generateWeeklyReview(data) {
 
 /**
  * Prepare remote/cloud data for use as appData.
- * Migrates old keys AND merges with defaultData to ensure all required fields exist.
+ * Migrates old keys AND patches missing required fields (flat, no recursion).
  * Always use this instead of migrateData() when receiving data from Firebase.
  */
 function prepareRemoteData(cloudData) {
-    return mergeDeep(defaultData, migrateData(cloudData));
+    const data = migrateData(cloudData);
+    // Patch any missing top-level fields (Firebase omits empty objects)
+    if (!data.completions) data.completions = {};
+    if (!data.badges) data.badges = {};
+    if (!data.weeklyReviews) data.weeklyReviews = {};
+    if (!data.pointAdjustments) data.pointAdjustments = [];
+    if (!data.withdrawals) data.withdrawals = [];
+    if (!data.settings) data.settings = {};
+    if (!data.settings.allowances) data.settings.allowances = { oliver: 50, miles: 30, zander: 20 };
+    if (data.settings.allowances.oliver == null) data.settings.allowances.oliver = 50;
+    if (data.settings.allowances.miles == null) data.settings.allowances.miles = 30;
+    if (data.settings.allowances.zander == null) data.settings.allowances.zander = 20;
+    if (!data.kids) data.kids = {};
+    ['oliver', 'miles', 'zander'].forEach(kidId => {
+        if (!data.kids[kidId]) data.kids[kidId] = { name: kidId.charAt(0).toUpperCase() + kidId.slice(1), avatar: `assets/${kidId}.png`, tasks: [], badges: [] };
+        if (!data.kids[kidId].tasks) data.kids[kidId].tasks = [];
+        if (!data.kids[kidId].badges) data.kids[kidId].badges = [];
+    });
+    return data;
 }
 
 /**
