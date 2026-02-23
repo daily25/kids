@@ -2210,3 +2210,289 @@ body {
     color: var(--color-red);
     flex-shrink: 0;
 }
+
+/* ==========================================
+   Weekly Review Modal
+   ========================================== */
+
+.modal-review {
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-review .modal-header {
+    flex-shrink: 0;
+}
+
+.weekly-review-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 8px;
+}
+
+.weekly-review-footer {
+    flex-shrink: 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-large {
+    padding: 16px 24px;
+    font-size: 1.05rem;
+}
+
+.review-kid-card {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.review-kid-card:last-child {
+    margin-bottom: 0;
+}
+
+.review-kid-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.review-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+}
+
+.review-kid-info {
+    flex: 1;
+}
+
+.review-kid-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.review-money {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-green);
+}
+
+.review-of {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.review-grade {
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.review-grade-emoji {
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.review-grade-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+.review-progress-bar {
+    position: relative;
+    height: 24px;
+    background: var(--bg-primary);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.review-progress-fill {
+    height: 100%;
+    border-radius: 12px;
+    transition: width 0.6s ease;
+    min-width: 4px;
+}
+
+.review-percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.review-section {
+    margin-top: 10px;
+}
+
+.review-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+
+.review-task-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.review-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.review-chip.perfect {
+    background: var(--color-green-dim);
+    color: var(--color-green);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.chip-days {
+    font-size: 0.65rem;
+    opacity: 0.7;
+}
+
+.review-missed-task {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.review-missed-task:last-child {
+    border-bottom: none;
+}
+
+.review-missed-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.review-task-icon {
+    font-size: 1rem;
+}
+
+.review-task-name {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.review-task-days {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.review-task-days.ok {
+    background: var(--color-yellow-dim);
+    color: var(--color-yellow);
+}
+
+.review-task-days.bad {
+    background: var(--color-red-dim);
+    color: var(--color-red);
+}
+
+.review-missed-bar {
+    height: 4px;
+    background: var(--bg-primary);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.review-missed-fill {
+    height: 100%;
+    background: var(--color-yellow);
+    border-radius: 2px;
+}
+
+.review-missed-impact {
+    font-size: 0.75rem;
+    color: var(--color-red);
+    font-weight: 500;
+}
+
+.review-perfect-week {
+    text-align: center;
+    padding: 12px;
+    margin-top: 8px;
+    background: var(--color-green-dim);
+    border-radius: var(--radius-md);
+    color: var(--color-green);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Week selector for past reviews */
+.review-week-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.review-week-selector label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.review-week-selector select {
+    flex: 1;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    max-width: 200px;
+}
+
+.review-history-btn {
+    font-size: 0.75rem !important;
+    padding: 4px 12px !important;
+    background: var(--bg-primary) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.review-history-btn:hover {
+    background: var(--color-purple-dim) !important;
+    color: var(--color-purple) !important;
+    border-color: var(--color-purple) !important;
+}

@@ -23,7 +23,8 @@ const defaultData = {
     },
     completions: {}, // Format: { 'kidId_taskId_YYYY-MM-DD': true }
     badges: {}, // Format: { 'kidId_badgeType_date': true }
-    withdrawals: [] // Format: [{ id, kidId, amount, note, date }]
+    withdrawals: [], // Format: [{ id, kidId, amount, note, date }]
+    weeklyReviews: {} // Format: { 'YYYY-MM-DD': { weekStart, savedAt, kids: [...] } }
 };
 
 // Badge definitions
@@ -815,6 +816,9 @@ function startNewWeek(data) {
         return;
     }
 
+    // Save weekly review BEFORE banking (so weekStart still points to the reviewed week)
+    saveWeeklyReviewSnapshot(data);
+
     // Record which week we're banking so we can detect duplicates
     data.settings.lastBankedWeekStart = previousWeekStart;
 
@@ -830,6 +834,74 @@ function startNewWeek(data) {
     data.settings.weekStart = getWeekStart(new Date()).toISOString();
     // Note: We keep historical completions for the dot matrix
     saveData(data);
+}
+
+/**
+ * Save a snapshot of the weekly review to persistent storage.
+ * Called before banking so the data reflects the actual week being reviewed.
+ */
+function saveWeeklyReviewSnapshot(data) {
+    const review = generateWeeklyReview(data);
+    const weekStart = data.settings.weekStart
+        ? formatDate(new Date(data.settings.weekStart))
+        : formatDate(getWeekStart(new Date()));
+
+    // Initialize weeklyReviews if needed
+    if (!data.weeklyReviews) {
+        data.weeklyReviews = {};
+    }
+
+    // Store the review keyed by week start date
+    data.weeklyReviews[weekStart] = {
+        weekStart: weekStart,
+        savedAt: new Date().toISOString(),
+        kids: review.map(kid => ({
+            kidId: kid.kidId,
+            name: kid.name,
+            avatar: kid.avatar,
+            money: kid.money,
+            maxAllowance: kid.maxAllowance,
+            earnedPoints: kid.earnedPoints,
+            possiblePoints: kid.possiblePoints,
+            percentage: kid.percentage,
+            missedTasks: kid.missedTasks.map(t => ({
+                name: t.task.name,
+                icon: t.task.icon,
+                points: t.task.points,
+                activeDays: t.activeDays,
+                completedDays: t.completedDays,
+                missedDays: t.missedDays,
+                moneyImpact: t.moneyImpact
+            })),
+            perfectTasks: kid.perfectTasks.map(t => ({
+                name: t.task.name,
+                icon: t.task.icon,
+                points: t.task.points,
+                activeDays: t.activeDays,
+                completedDays: t.completedDays
+            }))
+        }))
+    };
+
+    console.log('Weekly review saved for week:', weekStart);
+}
+
+/**
+ * Get weekly review history, sorted most recent first.
+ */
+function getWeeklyReviewHistory(data) {
+    if (!data.weeklyReviews) return [];
+
+    return Object.values(data.weeklyReviews)
+        .sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+}
+
+/**
+ * Get a specific week's saved review.
+ */
+function getSavedReview(data, weekStartDate) {
+    if (!data.weeklyReviews) return null;
+    return data.weeklyReviews[weekStartDate] || null;
 }
 
 /**
@@ -1125,5 +1197,9 @@ window.Storage = {
     isPerfectDay,
     saveDataLocal,
     migrateData,
-    repairDoubleBanking
+    repairDoubleBanking,
+    generateWeeklyReview,
+    getWeeklyReviewHistory,
+    getSavedReview,
+    saveWeeklyReviewSnapshot
 };

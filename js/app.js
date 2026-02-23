@@ -88,12 +88,7 @@ function checkForNewWeek() {
                 return;
             }
 
-            if (confirm('It\'s a new week! Would you like to bank last week\'s earnings and start fresh?')) {
-                Storage.startNewWeek(appData);
-                renderCurrentView();
-                Components.updateNavMoney(appData);
-                showSyncNotification('New week started! Earnings banked.');
-            }
+            showWeeklyReview();
         }, 1500);
     }
 }
@@ -175,13 +170,26 @@ function setupEventListeners() {
 
     // Start new week button
     document.getElementById('startNewWeekBtn').addEventListener('click', () => {
-        if (confirm('Start a new week? This will:\n• Bank current earnings to each kid\'s total\n• Reset weekly points to 0\n\nContinue?')) {
-            Storage.startNewWeek(appData);
-            closeSettingsModal();
-            renderCurrentView();
-            Components.updateNavMoney(appData);
-            showSyncNotification('New week started! Earnings banked.');
-        }
+        closeSettingsModal();
+        showWeeklyReview();
+    });
+
+    // Weekly review modal
+    document.getElementById('weeklyReviewClose').addEventListener('click', closeWeeklyReview);
+    document.getElementById('weeklyReviewModal').addEventListener('click', (e) => {
+        if (e.target.id === 'weeklyReviewModal') closeWeeklyReview();
+    });
+    document.getElementById('bankAndStartWeekBtn').addEventListener('click', () => {
+        Storage.startNewWeek(appData);
+        closeWeeklyReview();
+        renderCurrentView();
+        Components.updateNavMoney(appData);
+        showSyncNotification('New week started! Earnings banked.');
+    });
+
+    // Past reviews button (in header)
+    document.getElementById('pastReviewsBtn').addEventListener('click', () => {
+        showPastReviews();
     });
 
     // Sound settings
@@ -1194,6 +1202,248 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+/**
+ * Get grade based on percentage
+ */
+function getReviewGrade(percentage) {
+    if (percentage >= 90) return { emoji: '🌟', label: 'Superstar!' };
+    if (percentage >= 75) return { emoji: '😊', label: 'Great week!' };
+    if (percentage >= 50) return { emoji: '👍', label: 'Nice effort!' };
+    if (percentage >= 25) return { emoji: '💪', label: 'Keep trying!' };
+    return { emoji: '😅', label: 'Rough week!' };
+}
+
+/**
+ * Show the weekly review modal (current week)
+ */
+function showWeeklyReview() {
+    const review = Storage.generateWeeklyReview(appData);
+    renderReviewContent(review, true);
+}
+
+/**
+ * Show past reviews browser
+ */
+function showPastReviews() {
+    const history = Storage.getWeeklyReviewHistory(appData);
+    if (history.length === 0) {
+        // No saved reviews yet — show current week instead
+        showWeeklyReview();
+        return;
+    }
+    // Show the most recent saved review
+    renderSavedReview(history[0], history);
+}
+
+/**
+ * Render a saved review from history
+ */
+function renderSavedReview(savedReview, allHistory) {
+    const content = document.getElementById('weeklyReviewContent');
+    const footer = document.querySelector('.weekly-review-footer');
+
+    // Build week selector
+    let html = buildWeekSelector(allHistory, savedReview.weekStart);
+
+    // Render each kid from saved data
+    savedReview.kids.forEach(kid => {
+        html += renderReviewKidCard(kid, true);
+    });
+
+    content.innerHTML = html;
+
+    // Swap footer to "Close" instead of "Bank" for past reviews
+    footer.innerHTML = '<button class="btn btn-secondary btn-large w-full" id="closeReviewBtn">Close</button>';
+    document.getElementById('closeReviewBtn').addEventListener('click', closeWeeklyReview);
+
+    // Attach week selector events
+    attachWeekSelectorEvents(allHistory);
+
+    document.getElementById('weeklyReviewModal').classList.add('active');
+}
+
+/**
+ * Build the week selector dropdown HTML
+ */
+function buildWeekSelector(history, currentWeek) {
+    if (history.length <= 1) return '';
+
+    const options = history.map(h => {
+        const weekStart = new Date(h.weekStart + 'T00:00:00');
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+            ' – ' + weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const selected = h.weekStart === currentWeek ? 'selected' : '';
+        return `<option value="${h.weekStart}" ${selected}>${label}</option>`;
+    }).join('');
+
+    return `
+        <div class="review-week-selector">
+            <label>📅 Week:</label>
+            <select id="reviewWeekSelect">${options}</select>
+        </div>
+    `;
+}
+
+/**
+ * Attach change event to the week selector
+ */
+function attachWeekSelectorEvents(allHistory) {
+    const select = document.getElementById('reviewWeekSelect');
+    if (!select) return;
+
+    select.addEventListener('change', () => {
+        const selectedWeek = select.value;
+        const selectedReview = allHistory.find(h => h.weekStart === selectedWeek);
+        if (selectedReview) {
+            renderSavedReview(selectedReview, allHistory);
+        }
+    });
+}
+
+/**
+ * Render review content — works for both live and saved reviews
+ */
+function renderReviewContent(review, showBankButton) {
+    const content = document.getElementById('weeklyReviewContent');
+    const footer = document.querySelector('.weekly-review-footer');
+
+    // Build history navigator if past reviews exist
+    const history = Storage.getWeeklyReviewHistory(appData);
+    let html = '';
+
+    if (history.length > 0) {
+        html += `
+            <div class="review-week-selector">
+                <label>📅 This week (in progress)</label>
+                <button class="btn btn-sm review-history-btn" id="viewHistoryBtn">View Past Weeks</button>
+            </div>
+        `;
+    }
+
+    review.forEach(kid => {
+        html += renderReviewKidCard(kid, false);
+    });
+
+    content.innerHTML = html;
+
+    // Restore bank button for current week
+    if (showBankButton) {
+        footer.innerHTML = '<button class="btn btn-primary btn-large w-full" id="bankAndStartWeekBtn">💰 Bank Earnings & Start New Week</button>';
+        document.getElementById('bankAndStartWeekBtn').addEventListener('click', () => {
+            Storage.startNewWeek(appData);
+            closeWeeklyReview();
+            renderCurrentView();
+            Components.updateNavMoney(appData);
+            showSyncNotification('New week started! Earnings banked.');
+        });
+    }
+
+    // Attach history button
+    const historyBtn = document.getElementById('viewHistoryBtn');
+    if (historyBtn) {
+        historyBtn.addEventListener('click', () => {
+            showPastReviews();
+        });
+    }
+
+    document.getElementById('weeklyReviewModal').classList.add('active');
+}
+
+/**
+ * Render a single kid's review card — handles both live review objects and saved review objects
+ */
+function renderReviewKidCard(kid, isSaved) {
+    const grade = getReviewGrade(kid.percentage);
+    const progressColor = kid.percentage >= 75 ? 'var(--color-green)' :
+        kid.percentage >= 50 ? 'var(--color-yellow)' :
+            kid.percentage >= 25 ? '#ff8c42' : 'var(--color-red)';
+
+    let html = `
+        <div class="review-kid-card">
+            <div class="review-kid-header">
+                <img src="${kid.avatar}" alt="${kid.name}" class="review-avatar">
+                <div class="review-kid-info">
+                    <div class="review-kid-name">${kid.name}</div>
+                    <div class="review-money">$${kid.money.toFixed(2)} <span class="review-of">of $${kid.maxAllowance}</span></div>
+                </div>
+                <div class="review-grade">
+                    <div class="review-grade-emoji">${grade.emoji}</div>
+                    <div class="review-grade-label">${grade.label}</div>
+                </div>
+            </div>
+            <div class="review-progress-bar">
+                <div class="review-progress-fill" style="width: ${kid.percentage}%; background: ${progressColor}"></div>
+                <span class="review-percentage">${kid.percentage}%</span>
+            </div>
+    `;
+
+    // Perfect tasks
+    const perfectTasks = kid.perfectTasks || [];
+    if (perfectTasks.length > 0) {
+        html += `
+            <div class="review-section review-perfect">
+                <div class="review-section-title">✅ Nailed It!</div>
+                <div class="review-task-chips">
+                    ${perfectTasks.map(t => {
+            const icon = isSaved ? t.icon : t.task.icon;
+            const name = isSaved ? t.name : t.task.name;
+            return `<span class="review-chip perfect">${icon} ${name} <span class="chip-days">${t.completedDays}/${t.activeDays}</span></span>`;
+        }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // Missed tasks
+    const missedTasks = kid.missedTasks || [];
+    if (missedTasks.length > 0) {
+        html += `
+            <div class="review-section review-missed">
+                <div class="review-section-title">💸 Room to Improve</div>
+                ${missedTasks.map(t => {
+            const icon = isSaved ? t.icon : t.task.icon;
+            const name = isSaved ? t.name : t.task.name;
+            const pct = Math.round((t.completedDays / t.activeDays) * 100);
+            return `
+                        <div class="review-missed-task">
+                            <div class="review-missed-header">
+                                <span class="review-task-icon">${icon}</span>
+                                <span class="review-task-name">${name}</span>
+                                <span class="review-task-days ${pct >= 50 ? 'ok' : 'bad'}">${t.completedDays}/${t.activeDays} days</span>
+                            </div>
+                            <div class="review-missed-bar">
+                                <div class="review-missed-fill" style="width: ${pct}%"></div>
+                            </div>
+                            ${t.moneyImpact > 0 ? `
+                                <div class="review-missed-impact">
+                                    Missed ${t.missedDays} day${t.missedDays > 1 ? 's' : ''} — ~$${t.moneyImpact.toFixed(2)} lost
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+        }).join('')}
+            </div>
+        `;
+    }
+
+    // If all tasks were perfect
+    if (missedTasks.length === 0 && perfectTasks.length > 0) {
+        html += `<div class="review-perfect-week">🎉 Perfect week! Every task every day!</div>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+/**
+ * Close the weekly review modal
+ */
+function closeWeeklyReview() {
+    document.getElementById('weeklyReviewModal').classList.remove('active');
+}
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', init);
 
@@ -1234,3 +1484,7 @@ window.setBank = function (kidId, amount) {
     Components.updateNavMoney(appData);
     console.log(`${appData.kids[kidId].name}: bank $${oldAmount.toFixed(2)} → $${amount.toFixed(2)}`);
 };
+
+// Global access to weekly review - call: showWeeklyReview() or showPastReviews()
+window.showWeeklyReview = function() { showWeeklyReview(); };
+window.showPastReviews = function() { showPastReviews(); };
