@@ -1216,3 +1216,21 @@ window.repairBank = function () {
     alert(summary);
     console.log('Repair complete:', report);
 };
+
+// Set bank balance directly - call: setBank('oliver', 16.67)
+window.setBank = function (kidId, amount) {
+    if (!appData) {
+        console.error('App data not loaded yet');
+        return;
+    }
+    if (!appData.kids[kidId]) {
+        console.error('Invalid kid ID. Use: oliver, miles, or zander');
+        return;
+    }
+    const oldAmount = appData.kids[kidId].bankedMoney || 0;
+    appData.kids[kidId].bankedMoney = parseFloat(amount);
+    Storage.saveData(appData);
+    renderCurrentView();
+    Components.updateNavMoney(appData);
+    console.log(`${appData.kids[kidId].name}: bank $${oldAmount.toFixed(2)} → $${amount.toFixed(2)}`);
+};

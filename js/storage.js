@@ -833,6 +833,86 @@ function startNewWeek(data) {
 }
 
 /**
+ * Generate a weekly review for each kid showing task-by-task breakdown.
+ * Called BEFORE banking so weekStart still points to the week being reviewed.
+ */
+function generateWeeklyReview(data) {
+    const kids = ['oliver', 'miles', 'zander'];
+    const weekStart = new Date(data.settings.weekStart || getWeekStart(new Date()).toISOString());
+    const weekDates = getWeekDates(weekStart);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Include all of today
+
+    return kids.map(kidId => {
+        const kid = data.kids[kidId];
+        const tasks = kid.tasks;
+        const maxAllowance = data.settings.allowances[kidId] || 0;
+        const weeklyMoney = calculateWeeklyMoney(data, kidId);
+        const weekPoints = calculateWeekPoints(data, kidId, weekStart.toISOString());
+        const bonusPoints = getWeeklyBonusPoints(data, kidId);
+
+        const totalEarned = weekPoints.earned + bonusPoints;
+        const totalPossible = weekPoints.possible + bonusPoints;
+        const percentage = totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 100;
+
+        // Per-task breakdown
+        const taskBreakdown = tasks.map(task => {
+            let activeDays = 0;
+            let completedDays = 0;
+
+            weekDates.forEach(date => {
+                if (date > today) return;
+                if (!isTaskActiveOnDate(task, date)) return;
+                activeDays++;
+                if (isTaskCompleted(data, kidId, task.id, date)) {
+                    completedDays++;
+                }
+            });
+
+            const missedDays = activeDays - completedDays;
+
+            // Calculate money impact of missed days for non-bonus tasks
+            let moneyImpact = 0;
+            if (missedDays > 0 && !task.bonusOnly && totalPossible > 0) {
+                // Each missed day costs: task.points (not earned) + 1 (penalty)
+                const pointsLost = missedDays * (task.points + 1);
+                moneyImpact = (pointsLost / totalPossible) * maxAllowance;
+                moneyImpact = Math.round(moneyImpact * 100) / 100;
+            }
+
+            return {
+                task,
+                activeDays,
+                completedDays,
+                missedDays,
+                isPerfect: missedDays === 0 && activeDays > 0,
+                moneyImpact
+            };
+        }).filter(t => t.activeDays > 0);
+
+        // Sort: missed tasks by impact (highest first), then perfect tasks
+        const missedTasks = taskBreakdown
+            .filter(t => !t.isPerfect)
+            .sort((a, b) => b.moneyImpact - a.moneyImpact);
+        const perfectTasks = taskBreakdown.filter(t => t.isPerfect);
+
+        return {
+            kidId,
+            name: kid.name,
+            avatar: kid.avatar,
+            money: weeklyMoney,
+            maxAllowance,
+            earnedPoints: totalEarned,
+            possiblePoints: totalPossible,
+            percentage,
+            missedTasks,
+            perfectTasks,
+            taskBreakdown
+        };
+    });
+}
+
+/**
  * Repair double-banking caused by two devices both running startNewWeek.
  * The second run would have:
  *   1. Calculated 'weekly money' based on the NEW weekStart (so only Monday's data)
@@ -844,6 +924,7 @@ function startNewWeek(data) {
  *   - Recalculates real lastWeekEarnings from the previous week's data
  */
 function repairDoubleBanking(data) {
+
     const kids = ['oliver', 'miles', 'zander'];
     const report = [];
 
