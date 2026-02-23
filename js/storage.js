@@ -319,6 +319,7 @@ function getCompletionKey(kidId, taskId, date) {
 }
 
 function isTaskCompleted(data, kidId, taskId, date) {
+    if (!data.completions) return false;
     const key = getCompletionKey(kidId, taskId, date);
     return !!data.completions[key];
 }
@@ -916,8 +917,9 @@ function generateWeeklyReview(data) {
     today.setHours(23, 59, 59, 999); // Include all of today
 
     return kids.map(kidId => {
-        const kid = data.kids[kidId];
-        const tasks = kid.tasks;
+        const kid = data.kids && data.kids[kidId];
+        if (!kid) return null;
+        const tasks = kid.tasks || [];
         const maxAllowance = data.settings.allowances[kidId] || 0;
         const weeklyMoney = calculateWeeklyMoney(data, kidId);
         const weekPoints = calculateWeekPoints(data, kidId, weekStart.toISOString());
@@ -981,7 +983,16 @@ function generateWeeklyReview(data) {
             perfectTasks,
             taskBreakdown
         };
-    });
+    }).filter(Boolean);
+}
+
+/**
+ * Prepare remote/cloud data for use as appData.
+ * Migrates old keys AND merges with defaultData to ensure all required fields exist.
+ * Always use this instead of migrateData() when receiving data from Firebase.
+ */
+function prepareRemoteData(cloudData) {
+    return mergeDeep(defaultData, migrateData(cloudData));
 }
 
 /**
@@ -1197,6 +1208,7 @@ window.Storage = {
     isPerfectDay,
     saveDataLocal,
     migrateData,
+    prepareRemoteData,
     repairDoubleBanking,
     generateWeeklyReview,
     getWeeklyReviewHistory,

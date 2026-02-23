@@ -189,7 +189,21 @@ function setupEventListeners() {
 
     // Past reviews button (in header)
     document.getElementById('pastReviewsBtn').addEventListener('click', () => {
-        showPastReviews();
+        try {
+            showPastReviews();
+        } catch (err) {
+            console.error('Weekly review error:', err);
+            // Show error inside the modal so the user sees something
+            const modal = document.getElementById('weeklyReviewModal');
+            const content = document.getElementById('weeklyReviewContent');
+            if (modal && content) {
+                content.innerHTML = `<div style="color:var(--color-red,#ef4444);padding:16px;text-align:center;">
+                    <p>⚠️ Could not load review</p>
+                    <p style="font-size:0.8rem;opacity:0.7;">${err.message}</p>
+                </div>`;
+                modal.classList.add('active');
+            }
+        }
     });
 
     // Sound settings
@@ -818,8 +832,8 @@ function initFirebaseSync() {
     const success = FirebaseSync.init((remoteData) => {
         console.log('Remote data received, updating local');
 
-        // Update local storage with remote data (migrate old keys)
-        appData = Storage.migrateData(remoteData);
+        // Update local storage with remote data (migrate + merge with defaults)
+        appData = Storage.prepareRemoteData(remoteData);
         Storage.saveDataLocal(appData); // Save locally without triggering sync back
 
         // Refresh the UI
@@ -837,9 +851,9 @@ function initFirebaseSync() {
         // Load from cloud first to check if there's existing data
         FirebaseSync.loadFromCloud().then((cloudData) => {
             if (cloudData && cloudData._lastUpdated) {
-                // Cloud has data - migrate old keys, then use cloud data
+                // Cloud has data - migrate + merge with defaults, then use cloud data
                 console.log('Cloud data found, syncing');
-                appData = Storage.migrateData(cloudData);
+                appData = Storage.prepareRemoteData(cloudData);
                 Storage.saveDataLocal(appData);
                 renderCurrentView();
                 Components.updateNavMoney(appData);
