@@ -81,13 +81,20 @@ function checkForNewWeek() {
     if (savedWeekStart < currentWeekStart) {
         // Delay slightly so the UI renders first
         setTimeout(() => {
+            // Re-check after delay in case a Firebase sync updated the data
+            const latestWeekStart = Storage.formatDate(new Date(appData.settings.weekStart));
+            if (latestWeekStart >= currentWeekStart) {
+                console.log('Week already banked by another device, skipping prompt');
+                return;
+            }
+
             if (confirm('It\'s a new week! Would you like to bank last week\'s earnings and start fresh?')) {
                 Storage.startNewWeek(appData);
                 renderCurrentView();
                 Components.updateNavMoney(appData);
                 showSyncNotification('New week started! Earnings banked.');
             }
-        }, 500);
+        }, 1500);
     }
 }
 
@@ -1189,3 +1196,23 @@ function escapeHtml(text) {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', init);
+
+// Global repair function - call from browser console: repairBank()
+window.repairBank = function () {
+    if (!appData) {
+        console.error('App data not loaded yet');
+        return;
+    }
+
+    const report = Storage.repairDoubleBanking(appData);
+    renderCurrentView();
+    Components.updateNavMoney(appData);
+
+    // Show summary
+    let summary = 'Bank repair complete:\n\n';
+    report.forEach(r => {
+        summary += `${r.kid}: $${r.bankBefore.toFixed(2)} → $${r.bankAfter.toFixed(2)} (removed $${r.duplicateRemoved.toFixed(2)} duplicate, real last week: $${r.realLastWeek.toFixed(2)})\n`;
+    });
+    alert(summary);
+    console.log('Repair complete:', report);
+};

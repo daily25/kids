@@ -801,6 +801,23 @@ function getLeaderboard(data) {
  * Week Management
  */
 function startNewWeek(data) {
+    const currentWeekStart = formatDate(getWeekStart(new Date()));
+    const previousWeekStart = data.settings.weekStart
+        ? formatDate(new Date(data.settings.weekStart))
+        : null;
+
+    // Idempotency check: if we already banked this exact week transition, skip banking
+    // This prevents double-banking when two devices both trigger startNewWeek
+    if (data.settings.lastBankedWeekStart === previousWeekStart &&
+        previousWeekStart !== null &&
+        formatDate(new Date(data.settings.weekStart)) === currentWeekStart) {
+        console.log('Week already banked, skipping duplicate bank operation');
+        return;
+    }
+
+    // Record which week we're banking so we can detect duplicates
+    data.settings.lastBankedWeekStart = previousWeekStart;
+
     // Save each kid's current week earnings as "last week" before banking
     const kids = ['oliver', 'miles', 'zander'];
     kids.forEach(kidId => {
@@ -813,6 +830,50 @@ function startNewWeek(data) {
     data.settings.weekStart = getWeekStart(new Date()).toISOString();
     // Note: We keep historical completions for the dot matrix
     saveData(data);
+}
+
+/**
+ * Repair double-banking caused by two devices both running startNewWeek.
+ * The second run would have:
+ *   1. Calculated 'weekly money' based on the NEW weekStart (so only Monday's data)
+ *   2. Added that to bankedMoney (double counting)
+ *   3. Overwritten lastWeekEarnings with Monday's values instead of actual last week
+ * 
+ * This function:
+ *   - Subtracts the duplicate amounts (stored in lastWeekEarnings from the bad 2nd run)
+ *   - Recalculates real lastWeekEarnings from the previous week's data
+ */
+function repairDoubleBanking(data) {
+    const kids = ['oliver', 'miles', 'zander'];
+    const report = [];
+
+    kids.forEach(kidId => {
+        const kid = data.kids[kidId];
+        const duplicateAmount = kid.lastWeekEarnings || 0;
+        const oldBanked = kid.bankedMoney || 0;
+
+        // Subtract the duplicate amount that was incorrectly added
+        kid.bankedMoney = Math.max(0, oldBanked - duplicateAmount);
+
+        // Recalculate the REAL last week earnings
+        const realLastWeekMoney = calculateLastWeekMoney(data, kidId);
+        kid.lastWeekEarnings = realLastWeekMoney;
+
+        report.push({
+            kid: kid.name,
+            duplicateRemoved: duplicateAmount,
+            bankBefore: oldBanked,
+            bankAfter: kid.bankedMoney,
+            realLastWeek: realLastWeekMoney
+        });
+    });
+
+    // Mark repair as done
+    data.settings.lastBankedWeekStart = formatDate(getLastWeekStart(data));
+
+    saveData(data);
+    console.table(report);
+    return report;
 }
 
 /**
@@ -982,5 +1043,6 @@ window.Storage = {
     getLifetimePoints,
     isPerfectDay,
     saveDataLocal,
-    migrateData
+    migrateData,
+    repairDoubleBanking
 };
