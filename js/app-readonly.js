@@ -52,39 +52,12 @@ function formatMoney(amount) {
 // as that format no longer exists in the data.
 
 /**
- * Render day headers showing the last 7 days (6 days ago → today)
- * Always has past days to click regardless of day of week
+ * Render day headers (Mon-Sun current week) and highlight selected day
  */
 function renderWeekNavHeaders() {
     const container = document.getElementById('dayHeaders');
-    const today = new Date();
-    const todayStr = getLocalDateString(today);
-    const selectedStr = getLocalDateString(selectedDate);
-    const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-    // Build last 7 days oldest → today
-    const days = [];
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        days.push(d);
-    }
-
-    container.innerHTML = `
-        <div class="days-container rolling-days">
-            ${days.map(date => {
-                const dateStr = getLocalDateString(date);
-                const isToday = dateStr === todayStr;
-                const isSelected = dateStr === selectedStr;
-                let cls = 'day-label';
-                if (isToday) cls += ' today';
-                if (isSelected && !isToday) cls += ' selected-day';
-                return `<div class="${cls}" data-date="${dateStr}">
-                    ${dayNames[date.getDay()]}<br>${date.getDate()}
-                </div>`;
-            }).join('')}
-        </div>
-    `;
+    Components.renderDayHeaders(container);
+    highlightSelectedDay();
 }
 
 /**
