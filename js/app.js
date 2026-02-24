@@ -557,9 +557,16 @@ function handleTaskSubmit(e) {
     }
 
     if (editingTask) {
-        // Update existing task for current kid only
-        Storage.updateTask(appData, currentKid, editingTask.id, {
-            name, points, penalty, icon, color, activeDays, bonusOnly
+        // Update task for ALL kids who have a task with the same name
+        const originalName = editingTask.name;
+        const updates = { name, points, penalty, icon, color, activeDays, bonusOnly };
+
+        ['oliver', 'miles', 'zander'].forEach(kidId => {
+            const kid = appData.kids[kidId];
+            const matchingTask = kid.tasks.find(t => t.name === originalName);
+            if (matchingTask) {
+                Storage.updateTask(appData, kidId, matchingTask.id, updates);
+            }
         });
     } else {
         // Add new task to selected kids
