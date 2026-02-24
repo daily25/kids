@@ -701,7 +701,7 @@ function getLastWeekBonusPoints(data, kidId) {
     const lastWeekEnd = new Date(lastWeekStart);
     lastWeekEnd.setDate(lastWeekEnd.getDate() + 7);
 
-    const adjustments = data.pointsAdjustments || [];
+    const adjustments = data.pointAdjustments || [];
     let bonus = 0;
 
     adjustments.forEach(adj => {
@@ -924,13 +924,26 @@ function generateWeeklyReview(data, weekStartOverride) {
         if (!kid) return null;
         const tasks = kid.tasks || [];
         const maxAllowance = data.settings.allowances[kidId] || 0;
-        const weeklyMoney = calculateWeeklyMoney(data, kidId);
         const weekPoints = calculateWeekPoints(data, kidId, weekStart.toISOString());
-        const bonusPoints = getWeeklyBonusPoints(data, kidId);
+
+        // Bonus points scoped to this specific week's date range only
+        const weekEndMs = weekStart.getTime() + 7 * 24 * 60 * 60 * 1000;
+        let bonusPoints = 0;
+        (data.pointAdjustments || []).forEach(adj => {
+            if (adj.kidId !== kidId) return;
+            const adjMs = new Date(adj.date).getTime();
+            if (adjMs >= weekStart.getTime() && adjMs < weekEndMs) {
+                bonusPoints += adj.type === 'bonus' ? adj.amount : -adj.amount;
+            }
+        });
 
         const totalEarned = weekPoints.earned + bonusPoints;
         const totalPossible = weekPoints.possible + bonusPoints;
         const percentage = totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 100;
+        // Compute money directly from this week's points — correct for both current and historical weeks
+        const weeklyMoney = totalPossible > 0
+            ? Math.round(maxAllowance * Math.max(0, Math.min(1, totalEarned / totalPossible)) * 100) / 100
+            : 0;
 
         // Per-task breakdown
         const taskBreakdown = tasks.map(task => {

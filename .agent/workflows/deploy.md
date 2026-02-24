@@ -30,7 +30,7 @@ description: How to deploy updates to the Kids Tasks Tracker app
    ```
 
 ## Version History
-- Current: v0.33
+- Current: v0.65
 - Always increment by 0.01 for each push
 
 ## Important Notes
