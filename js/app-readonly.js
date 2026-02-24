@@ -293,7 +293,7 @@ function openDayViewModal(date) {
                     <div class="day-task-icon" style="background: ${dimColor};">${task.icon}</div>
                     <div class="day-task-info">
                         <div class="day-task-name">${escapeHtml(task.name)}</div>
-                        <div class="day-task-points">${task.points} points</div>
+                        <div class="day-task-points">${task.points} point${task.points !== 1 ? 's' : ''}${!task.bonusOnly && task.penalty != null && task.penalty !== 1 ? ' · <span class="penalty-badge">-' + task.penalty + ' penalty</span>' : ''}${task.bonusOnly ? ' <span class="bonus-badge">⭐ Bonus</span>' : ''}</div>
                     </div>
                     <div class="day-task-status ${isCompleted ? 'completed' : 'incomplete'}">
                         ${isCompleted ? '✓' : '✗'}
@@ -454,7 +454,7 @@ function renderTasks() {
                 </div>
                 <div class="task-info">
                     <div class="task-name">${escapeHtml(task.name)}</div>
-                    <div class="task-points">${task.points} points${task.bonusOnly ? ' <span class="bonus-badge">\u2b50 Bonus</span>' : ''}</div>
+                    <div class="task-points">${task.points} point${task.points !== 1 ? 's' : ''}${!task.bonusOnly && task.penalty != null && task.penalty !== 1 ? ' · <span class="penalty-badge">-' + task.penalty + ' penalty</span>' : ''}${task.bonusOnly ? ' <span class="bonus-badge">\u2b50 Bonus</span>' : ''}</div>
                 </div>
                 <div class="task-toggle ${isCompleted ? 'completed' : ''}" 
                         style="${isCompleted ? `border-color: ${task.color}; background: ${dimColor};` : ''}">
