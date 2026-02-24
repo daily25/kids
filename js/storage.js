@@ -993,12 +993,20 @@ function generateWeeklyReview(data) {
  */
 function prepareRemoteData(cloudData) {
     const data = migrateData(cloudData);
+
+    // Firebase can return arrays as {0: x, 1: y} objects — convert back to real arrays
+    function fixArray(val) {
+        if (Array.isArray(val)) return val;
+        if (val && typeof val === 'object') return Object.values(val);
+        return [];
+    }
+
     // Patch any missing top-level fields (Firebase omits empty objects)
     if (!data.completions) data.completions = {};
     if (!data.badges) data.badges = {};
     if (!data.weeklyReviews) data.weeklyReviews = {};
-    if (!data.pointAdjustments) data.pointAdjustments = [];
-    if (!data.withdrawals) data.withdrawals = [];
+    data.pointAdjustments = fixArray(data.pointAdjustments);
+    data.withdrawals = fixArray(data.withdrawals);
     if (!data.settings) data.settings = {};
     if (!data.settings.allowances) data.settings.allowances = { oliver: 50, miles: 30, zander: 20 };
     if (data.settings.allowances.oliver == null) data.settings.allowances.oliver = 50;
@@ -1007,8 +1015,14 @@ function prepareRemoteData(cloudData) {
     if (!data.kids) data.kids = {};
     ['oliver', 'miles', 'zander'].forEach(kidId => {
         if (!data.kids[kidId]) data.kids[kidId] = { name: kidId.charAt(0).toUpperCase() + kidId.slice(1), avatar: `assets/${kidId}.png`, tasks: [], badges: [] };
-        if (!data.kids[kidId].tasks) data.kids[kidId].tasks = [];
-        if (!data.kids[kidId].badges) data.kids[kidId].badges = [];
+        data.kids[kidId].tasks = fixArray(data.kids[kidId].tasks);
+        data.kids[kidId].badges = fixArray(data.kids[kidId].badges);
+        // Fix activeDays inside each task (Firebase converts [0,1,2] arrays to {0:0,1:1,2:2} objects)
+        data.kids[kidId].tasks.forEach(task => {
+            if (task.activeDays && !Array.isArray(task.activeDays)) {
+                task.activeDays = Object.values(task.activeDays).map(Number);
+            }
+        });
     });
     return data;
 }

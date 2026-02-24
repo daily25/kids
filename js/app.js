@@ -197,9 +197,11 @@ function setupEventListeners() {
             const modal = document.getElementById('weeklyReviewModal');
             const content = document.getElementById('weeklyReviewContent');
             if (modal && content) {
+                const stack = String(err.stack || err).slice(0, 800);
                 content.innerHTML = `<div style="color:var(--color-red,#ef4444);padding:16px;text-align:center;">
                     <p>⚠️ Could not load review</p>
                     <p style="font-size:0.8rem;opacity:0.7;">${err.message}</p>
+                    <pre style="font-size:0.5rem;text-align:left;overflow:auto;max-height:180px;white-space:pre-wrap;margin-top:8px;background:rgba(0,0,0,0.2);padding:8px;border-radius:4px;">${stack}</pre>
                 </div>`;
                 modal.classList.add('active');
             }
