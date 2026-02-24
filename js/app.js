@@ -1503,5 +1503,5 @@ window.setBank = function (kidId, amount) {
 };
 
 // Global access to weekly review - call: showWeeklyReview() or showPastReviews()
-window.showWeeklyReview = function() { showWeeklyReview(); };
-window.showPastReviews = function() { showPastReviews(); };
+window.showWeeklyReview = showWeeklyReview;
+window.showPastReviews = showPastReviews;
