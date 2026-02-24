@@ -907,11 +907,14 @@ function getSavedReview(data, weekStartDate) {
 
 /**
  * Generate a weekly review for each kid showing task-by-task breakdown.
+ * weekStartOverride (YYYY-MM-DD string) allows reviewing any historical week.
  * Called BEFORE banking so weekStart still points to the week being reviewed.
  */
-function generateWeeklyReview(data) {
+function generateWeeklyReview(data, weekStartOverride) {
     const kids = ['oliver', 'miles', 'zander'];
-    const weekStart = new Date(data.settings.weekStart || getWeekStart(new Date()).toISOString());
+    const weekStart = weekStartOverride
+        ? new Date(weekStartOverride + 'T00:00:00')
+        : new Date(data.settings.weekStart || getWeekStart(new Date()).toISOString());
     const weekDates = getWeekDates(weekStart);
     const today = new Date();
     today.setHours(23, 59, 59, 999); // Include all of today
@@ -1199,6 +1202,34 @@ function getTotalWithdrawn(data, kidId) {
         .reduce((sum, w) => sum + w.amount, 0);
 }
 
+/**
+ * Get all weeks with historical data (saved snapshots + weeks derived from
+ * completion keys), sorted most recent first. Excludes the current week.
+ * Used for navigating to any prior week even without a saved snapshot.
+ */
+function getNavigableWeeks(data) {
+    const weeks = new Set();
+
+    // Include saved review snapshots
+    Object.keys(data.weeklyReviews || {}).forEach(ws => weeks.add(ws));
+
+    // Derive weeks from completion keys: "kidId_taskId_YYYY-MM-DD"
+    const currentWeekStart = data.settings.weekStart
+        ? formatDate(getWeekStart(new Date(data.settings.weekStart)))
+        : formatDate(getWeekStart(new Date()));
+    Object.keys(data.completions || {}).forEach(key => {
+        const dateStr = key.split('_').pop();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const ws = formatDate(getWeekStart(new Date(dateStr + 'T00:00:00')));
+            if (ws < currentWeekStart) {
+                weeks.add(ws);
+            }
+        }
+    });
+
+    return Array.from(weeks).sort((a, b) => b.localeCompare(a));
+}
+
 // Export functions
 window.Storage = {
     loadData,
@@ -1244,6 +1275,7 @@ window.Storage = {
     repairDoubleBanking,
     generateWeeklyReview,
     getWeeklyReviewHistory,
+    getNavigableWeeks,
     getSavedReview,
     saveWeeklyReviewSnapshot
 };

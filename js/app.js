@@ -1245,96 +1245,72 @@ function showPastReviews() {
 }
 
 /**
- * Render a saved review from history
+ * Render a historical week — uses saved snapshot if available, otherwise computes live.
+ * allWeeks is a sorted (desc) array of YYYY-MM-DD strings from getNavigableWeeks().
  */
-function renderSavedReview(savedReview, allHistory) {
+function renderWeekReview(weekStart, allWeeks) {
     const content = document.getElementById('weeklyReviewContent');
     const footer = document.querySelector('.weekly-review-footer');
 
-    // Build prev/next week navigation
-    let html = buildWeekNav(allHistory, savedReview.weekStart);
+    const currentIdx = allWeeks.indexOf(weekStart);
+    const hasPrev = currentIdx < allWeeks.length - 1;
+    const hasNext = currentIdx > 0;
 
-    // Render each kid from saved data
-    const kids = Array.isArray(savedReview.kids)
-        ? savedReview.kids
-        : Object.values(savedReview.kids || {});
-    kids.forEach(kid => {
-        html += renderReviewKidCard(kid, true);
-    });
+    const weekStartDate = new Date(weekStart + 'T00:00:00');
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+    const weekLabel = weekStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+        ' – ' + weekEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    let html = `<div class="review-week-nav">
+        <button class="review-nav-btn" id="prevWeekBtn" ${!hasPrev ? 'disabled' : ''}>◀</button>
+        <span class="review-week-label">📅 ${weekLabel}</span>
+        <button class="review-nav-btn" id="nextWeekBtn" ${!hasNext ? 'disabled' : ''}>▶</button>
+    </div>`;
+
+    // Prefer saved snapshot; fall back to live computation from completions data
+    const saved = Storage.getSavedReview(appData, weekStart);
+    if (saved) {
+        const kids = Array.isArray(saved.kids) ? saved.kids : Object.values(saved.kids || {});
+        kids.forEach(kid => { html += renderReviewKidCard(kid, true); });
+    } else {
+        const review = Storage.generateWeeklyReview(appData, weekStart);
+        review.forEach(kid => { html += renderReviewKidCard(kid, false); });
+    }
 
     content.innerHTML = html;
 
-    // Footer: "Current Week" + "Close"
     footer.innerHTML = `
-        <button class="btn btn-secondary btn-large" id="currentWeekBtn">📅 Current Week</button>
+        <button class="btn btn-secondary btn-large" id="currentWeekBtn">📅 This Week</button>
         <button class="btn btn-secondary btn-large" id="closeReviewBtn">Close</button>
     `;
     document.getElementById('currentWeekBtn').addEventListener('click', showWeeklyReview);
     document.getElementById('closeReviewBtn').addEventListener('click', closeWeeklyReview);
 
-    // Attach prev/next events
-    attachWeekNavEvents(allHistory, savedReview.weekStart);
+    const prevBtn = document.getElementById('prevWeekBtn');
+    const nextBtn = document.getElementById('nextWeekBtn');
+    if (prevBtn && !prevBtn.disabled) {
+        prevBtn.addEventListener('click', () => renderWeekReview(allWeeks[currentIdx + 1], allWeeks));
+    }
+    if (nextBtn && !nextBtn.disabled) {
+        nextBtn.addEventListener('click', () => renderWeekReview(allWeeks[currentIdx - 1], allWeeks));
+    }
 
     document.getElementById('weeklyReviewModal').classList.add('active');
 }
 
 /**
- * Build prev/next week navigation header
- */
-function buildWeekNav(allHistory, currentWeekStart) {
-    // allHistory is sorted desc (newest first), so prev = older = higher index, next = newer = lower index
-    const currentIdx = allHistory.findIndex(h => h.weekStart === currentWeekStart);
-    const hasPrev = currentIdx < allHistory.length - 1;
-    const hasNext = currentIdx > 0;
-
-    const weekStart = new Date(currentWeekStart + 'T00:00:00');
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekLabel = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-        ' – ' + weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-    return `
-        <div class="review-week-nav">
-            <button class="review-nav-btn" id="prevWeekBtn" ${!hasPrev ? 'disabled' : ''}>◀</button>
-            <span class="review-week-label">📅 ${weekLabel}</span>
-            <button class="review-nav-btn" id="nextWeekBtn" ${!hasNext ? 'disabled' : ''}>▶</button>
-        </div>
-    `;
-}
-
-/**
- * Attach prev/next events to week navigation buttons
- */
-function attachWeekNavEvents(allHistory, currentWeekStart) {
-    const currentIdx = allHistory.findIndex(h => h.weekStart === currentWeekStart);
-
-    const prevBtn = document.getElementById('prevWeekBtn');
-    const nextBtn = document.getElementById('nextWeekBtn');
-
-    if (prevBtn && !prevBtn.disabled) {
-        prevBtn.addEventListener('click', () => {
-            renderSavedReview(allHistory[currentIdx + 1], allHistory);
-        });
-    }
-    if (nextBtn && !nextBtn.disabled) {
-        nextBtn.addEventListener('click', () => {
-            renderSavedReview(allHistory[currentIdx - 1], allHistory);
-        });
-    }
-}
-
-/**
- * Render review content — works for both live and saved reviews
+ * Render review content for the current week with nav to prior weeks
  */
 function renderReviewContent(review, showBankButton) {
     const content = document.getElementById('weeklyReviewContent');
     const footer = document.querySelector('.weekly-review-footer');
 
-    const history = Storage.getWeeklyReviewHistory(appData);
+    // All navigable prior weeks (saved snapshots + weeks derived from completions)
+    const allWeeks = Storage.getNavigableWeeks(appData);
 
-    // Header: "This Week" label + optional prev arrow if history exists
     let html = `<div class="review-week-nav">
-        <button class="review-nav-btn" id="prevWeekBtn" ${history.length === 0 ? 'disabled' : ''}>◀</button>
+        <button class="review-nav-btn" id="prevWeekBtn" ${allWeeks.length === 0 ? 'disabled' : ''}>◀</button>
         <span class="review-week-label">📅 This Week</span>
         <button class="review-nav-btn" disabled>▶</button>
     </div>`;
@@ -1345,15 +1321,11 @@ function renderReviewContent(review, showBankButton) {
 
     content.innerHTML = html;
 
-    // Prev button navigates to most recent saved review
     const prevBtn = document.getElementById('prevWeekBtn');
     if (prevBtn && !prevBtn.disabled) {
-        prevBtn.addEventListener('click', () => {
-            renderSavedReview(history[0], history);
-        });
+        prevBtn.addEventListener('click', () => renderWeekReview(allWeeks[0], allWeeks));
     }
 
-    // Restore bank button for current week
     if (showBankButton) {
         footer.innerHTML = '<button class="btn btn-primary btn-large w-full" id="bankAndStartWeekBtn">💰 Bank Earnings & Start New Week</button>';
         document.getElementById('bankAndStartWeekBtn').addEventListener('click', () => {
