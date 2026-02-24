@@ -280,6 +280,7 @@ function addTask(data, kidId, task) {
         id: 'task_' + Date.now(),
         name: task.name,
         points: parseInt(task.points) || 10,
+        penalty: parseInt(task.penalty) || 1,
         icon: task.icon || '📝',
         color: task.color || '#4ade80',
         activeDays: task.activeDays || [0, 1, 2, 3, 4, 5, 6], // Default to all days
@@ -636,8 +637,8 @@ function calculateDayPoints(data, kidId, date) {
             if (isTaskCompleted(data, kidId, task.id, date)) {
                 earned += task.points;
             } else if (isPastDay) {
-                // Penalty: -1 point for each incomplete task from past days
-                earned -= 1;
+                // Penalty for incomplete task from past days (configurable per task, default 1)
+                earned -= (task.penalty != null ? task.penalty : 1);
             }
         }
     });
@@ -964,8 +965,9 @@ function generateWeeklyReview(data, weekStartOverride) {
             // Calculate money impact of missed days for non-bonus tasks
             let moneyImpact = 0;
             if (missedDays > 0 && !task.bonusOnly && totalPossible > 0) {
-                // Each missed day costs: task.points (not earned) + 1 (penalty)
-                const pointsLost = missedDays * (task.points + 1);
+                // Each missed day costs: task.points (not earned) + penalty (configurable)
+                const taskPenalty = task.penalty != null ? task.penalty : 1;
+                const pointsLost = missedDays * (task.points + taskPenalty);
                 moneyImpact = (pointsLost / totalPossible) * maxAllowance;
                 moneyImpact = Math.round(moneyImpact * 100) / 100;
             }

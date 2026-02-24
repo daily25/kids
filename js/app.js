@@ -160,6 +160,11 @@ function setupEventListeners() {
         }
     });
 
+    // Bonus-only toggle — hide/show penalty field
+    document.getElementById('taskBonusOnly').addEventListener('change', (e) => {
+        document.getElementById('penaltyGroup').style.display = e.target.checked ? 'none' : '';
+    });
+
     // Auto-save allowances on change
     ['oliverAllowance', 'milesAllowance', 'zanderAllowance'].forEach(id => {
         document.getElementById(id).addEventListener('change', handleSaveSettings);
@@ -449,6 +454,7 @@ function openTaskModal() {
     document.getElementById('taskId').value = '';
     document.getElementById('taskName').value = '';
     document.getElementById('taskPoints').value = '1';
+    document.getElementById('taskPenalty').value = '1';
     document.getElementById('deleteTaskBtn').style.display = 'none';
     document.getElementById('kidSelectorGroup').style.display = 'block';
 
@@ -465,8 +471,9 @@ function openTaskModal() {
         btn.classList.add('selected');
     });
 
-    // Reset bonus-only toggle
+    // Reset bonus-only toggle and show penalty
     document.getElementById('taskBonusOnly').checked = false;
+    document.getElementById('penaltyGroup').style.display = '';
 
     // Reset kid checkboxes - check all by default
     document.querySelectorAll('#kidSelector input[type="checkbox"]').forEach(cb => {
@@ -486,6 +493,7 @@ function openEditTaskModal(task) {
     document.getElementById('taskId').value = task.id;
     document.getElementById('taskName').value = task.name;
     document.getElementById('taskPoints').value = task.points;
+    document.getElementById('taskPenalty').value = task.penalty != null ? task.penalty : 1;
     document.getElementById('deleteTaskBtn').style.display = 'block';
     document.getElementById('kidSelectorGroup').style.display = 'none'; // Hide kid selector when editing
 
@@ -506,8 +514,10 @@ function openEditTaskModal(task) {
         btn.classList.toggle('selected', activeDays.includes(day));
     });
 
-    // Set bonus-only toggle
-    document.getElementById('taskBonusOnly').checked = !!task.bonusOnly;
+    // Set bonus-only toggle and penalty visibility
+    const isBonusOnly = !!task.bonusOnly;
+    document.getElementById('taskBonusOnly').checked = isBonusOnly;
+    document.getElementById('penaltyGroup').style.display = isBonusOnly ? 'none' : '';
 
     taskModal.classList.add('active');
 }
@@ -528,6 +538,7 @@ function handleTaskSubmit(e) {
 
     const name = document.getElementById('taskName').value.trim();
     const points = parseInt(document.getElementById('taskPoints').value) || 1;
+    const penalty = parseInt(document.getElementById('taskPenalty').value) || 1;
     const icon = document.querySelector('.icon-option.selected')?.dataset.icon || '📝';
     const color = document.querySelector('.color-option.selected')?.dataset.color || '#4ade80';
 
@@ -548,7 +559,7 @@ function handleTaskSubmit(e) {
     if (editingTask) {
         // Update existing task for current kid only
         Storage.updateTask(appData, currentKid, editingTask.id, {
-            name, points, icon, color, activeDays, bonusOnly
+            name, points, penalty, icon, color, activeDays, bonusOnly
         });
     } else {
         // Add new task to selected kids
@@ -562,7 +573,7 @@ function handleTaskSubmit(e) {
 
         selectedKids.forEach(kidId => {
             Storage.addTask(appData, kidId, {
-                name, points, icon, color, activeDays, bonusOnly
+                name, points, penalty, icon, color, activeDays, bonusOnly
             });
         });
     }

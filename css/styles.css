@@ -521,6 +521,22 @@ body {
     color: var(--text-primary);
 }
 
+/* Form Row - side-by-side inputs */
+.form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.form-row .form-group {
+    margin-bottom: 0;
+}
+
+.form-group-half {
+    flex: 1;
+    min-width: 0;
+}
+
 /* Form Elements */
 .form-group {
     margin-bottom: 20px;
@@ -1993,6 +2009,18 @@ body {
     letter-spacing: 0.3px;
 }
 
+.penalty-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f87171, #ef4444);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
 /* Task Reorder Bar */
 .task-reorder-bar {
     display: flex;
@@ -2486,7 +2514,7 @@ body {
 }
 
 .review-nav-btn:hover:not(:disabled) {
-    background: var(--color-purple-dim, rgba(139,92,246,0.15));
+    background: var(--color-purple-dim, rgba(139, 92, 246, 0.15));
     border-color: var(--color-purple, #8b5cf6);
     color: var(--color-purple, #8b5cf6);
 }
@@ -2495,4 +2523,3 @@ body {
     opacity: 0.3;
     cursor: default;
 }
-

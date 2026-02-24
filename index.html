@@ -14,7 +14,7 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="assets/oliver.png">
     <link rel="apple-touch-icon" href="assets/oliver.png">
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 
 <body>
@@ -30,7 +30,7 @@
                 </svg>
             </button>
             <h1 class="app-title cursor-pointer" id="homeBtn"><span class="title-accent">Kids</span>Tasks</h1>
-            <span class="app-version">v0.65</span>
+            <span class="app-version">v0.66</span>
             <div class="header-right">
                 <button class="header-btn" id="bonusPointsBtn" aria-label="Add/Remove Points" title="Add/Remove Points">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -110,9 +110,15 @@
                     <label for="taskName">Task Name</label>
                     <input type="text" id="taskName" placeholder="e.g., Brush teeth" required>
                 </div>
-                <div class="form-group">
-                    <label for="taskPoints">Points</label>
-                    <input type="number" id="taskPoints" min="1" max="100" value="1" required>
+                <div class="form-row">
+                    <div class="form-group form-group-half">
+                        <label for="taskPoints">Points <small class="opacity-60">(earned)</small></label>
+                        <input type="number" id="taskPoints" min="1" max="100" value="1" required>
+                    </div>
+                    <div class="form-group form-group-half" id="penaltyGroup">
+                        <label for="taskPenalty">Penalty <small class="opacity-60">(if missed)</small></label>
+                        <input type="number" id="taskPenalty" min="0" max="100" value="1">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Icon</label>
@@ -412,9 +418,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script src="js/firebase.js?v=2"></script>
-    <script src="js/storage.js?v=17"></script>
-    <script src="js/components.js?v=12"></script>
-    <script src="js/app.js?v=17"></script>
+    <script src="js/storage.js?v=18"></script>
+    <script src="js/components.js?v=13"></script>
+    <script src="js/app.js?v=18"></script>
 </body>
 
 </html>
