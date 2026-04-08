@@ -484,7 +484,7 @@ function initFirebaseSync() {
         console.log('Remote data received, updating local');
 
         // Update local data with remote data (migrate old keys)
-        appData = Storage.migrateData(remoteData);
+        appData = Storage.prepareRemoteData(remoteData);
         Storage.saveDataLocal(appData); // Save locally without triggering sync back
 
         // Refresh the UI
@@ -500,7 +500,7 @@ function initFirebaseSync() {
         FirebaseSync.loadFromCloud().then((cloudData) => {
             if (cloudData && cloudData._lastUpdated) {
                 console.log('Cloud data found, syncing');
-                appData = Storage.migrateData(cloudData);
+                appData = Storage.prepareRemoteData(cloudData);
                 Storage.saveDataLocal(appData);
                 renderCurrentView();
                 updateNavMoney(appData);

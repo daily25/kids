@@ -20,6 +20,8 @@ const taskForm = document.getElementById('taskForm');
 const pointsForm = document.getElementById('pointsForm');
 const withdrawalModal = document.getElementById('withdrawalModal');
 const withdrawalForm = document.getElementById('withdrawalForm');
+const loanForm = document.getElementById('loanForm');
+const cashDepositForm = document.getElementById('cashDepositForm');
 
 /**
  * Initialize the app
@@ -219,15 +221,17 @@ function setupEventListeners() {
     document.getElementById('soundsEnabled').addEventListener('change', handleSoundsToggle);
     document.getElementById('soundTaskSelect').addEventListener('change', handleSoundTaskChange);
 
-    // Record Payout button (in header)
+    // Bank actions button (in header)
     document.getElementById('recordPayoutBtn').addEventListener('click', openWithdrawalModal);
 
-    // Withdrawal modal
+    // Bank actions modal
     document.getElementById('withdrawalModalClose').addEventListener('click', closeWithdrawalModal);
     withdrawalModal.addEventListener('click', (e) => {
         if (e.target === withdrawalModal) closeWithdrawalModal();
     });
     withdrawalForm.addEventListener('submit', handleWithdrawalSubmit);
+    loanForm.addEventListener('submit', handleLoanSubmit);
+    cashDepositForm.addEventListener('submit', handleCashDepositSubmit);
 
     // Handle keyboard escape
     document.addEventListener('keydown', (e) => {
@@ -1110,27 +1114,34 @@ function handlePointsSubmit(e) {
 }
 
 /**
- * Open withdrawal modal
+ * Reset a bank action form and preselect the current kid
  */
-function openWithdrawalModal() {
-    // Reset form
-    document.getElementById('withdrawalAmount').value = '';
-    document.getElementById('withdrawalNote').value = '';
+function resetBankActionForm(groupName, amountId, noteId) {
+    document.getElementById(amountId).value = '';
+    document.getElementById(noteId).value = '';
 
-    // Reset kid selection to current kid or first
-    const currentKidRadio = document.querySelector(`input[name="withdrawalKid"][value="${currentKid}"]`);
+    const currentKidRadio = document.querySelector(`input[name="${groupName}"][value="${currentKid}"]`);
     if (currentKidRadio) {
         currentKidRadio.checked = true;
     } else {
-        document.querySelector('input[name="withdrawalKid"]').checked = true;
+        document.querySelector(`input[name="${groupName}"]`).checked = true;
     }
+}
+
+/**
+ * Open bank actions modal
+ */
+function openWithdrawalModal() {
+    resetBankActionForm('withdrawalKid', 'withdrawalAmount', 'withdrawalNote');
+    resetBankActionForm('loanKid', 'loanAmount', 'loanNote');
+    resetBankActionForm('cashKid', 'cashAmount', 'cashNote');
 
     withdrawalModal.classList.add('active');
     document.getElementById('withdrawalAmount').focus();
 }
 
 /**
- * Close withdrawal modal
+ * Close bank actions modal
  */
 function closeWithdrawalModal() {
     withdrawalModal.classList.remove('active');
@@ -1146,7 +1157,7 @@ function handleWithdrawalSubmit(e) {
     const amount = parseFloat(document.getElementById('withdrawalAmount').value);
     const note = document.getElementById('withdrawalNote').value.trim();
 
-    if (!kidId || !amount || amount <= 0) {
+    if (!kidId || Number.isNaN(amount) || amount <= 0) {
         alert('Please select a child and enter a valid amount');
         return;
     }
@@ -1160,6 +1171,50 @@ function handleWithdrawalSubmit(e) {
     Storage.addWithdrawal(appData, kidId, amount, note);
 
     // Close modal and update displays
+    closeWithdrawalModal();
+    renderCurrentView();
+    Components.updateNavMoney(appData);
+}
+
+/**
+ * Handle loan form submission
+ */
+function handleLoanSubmit(e) {
+    e.preventDefault();
+
+    const kidId = document.querySelector('input[name="loanKid"]:checked')?.value;
+    const amount = parseFloat(document.getElementById('loanAmount').value);
+    const note = document.getElementById('loanNote').value.trim();
+
+    if (!kidId || Number.isNaN(amount) || amount <= 0) {
+        alert('Please select a child and enter a valid loan amount');
+        return;
+    }
+
+    Storage.addLoan(appData, kidId, amount, note);
+
+    closeWithdrawalModal();
+    renderCurrentView();
+    Components.updateNavMoney(appData);
+}
+
+/**
+ * Handle cash deposit form submission
+ */
+function handleCashDepositSubmit(e) {
+    e.preventDefault();
+
+    const kidId = document.querySelector('input[name="cashKid"]:checked')?.value;
+    const amount = parseFloat(document.getElementById('cashAmount').value);
+    const note = document.getElementById('cashNote').value.trim();
+
+    if (!kidId || Number.isNaN(amount) || amount <= 0) {
+        alert('Please select a child and enter a valid cash amount');
+        return;
+    }
+
+    Storage.addCashDeposit(appData, kidId, amount, note);
+
     closeWithdrawalModal();
     renderCurrentView();
     Components.updateNavMoney(appData);

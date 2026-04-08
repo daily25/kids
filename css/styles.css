@@ -2126,6 +2126,35 @@ body {
     font-size: 20px;
 }
 
+.bank-actions-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.bank-action-section {
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+}
+
+.bank-action-section:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.bank-action-section h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.bank-action-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
 .bank-section {
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
@@ -2184,6 +2213,14 @@ body {
     margin-top: 2px;
 }
 
+.bank-detail-positive {
+    color: var(--color-green);
+}
+
+.bank-detail-negative {
+    color: var(--color-red);
+}
+
 /* Withdrawal History */
 .withdrawal-history {
     margin-top: 14px;
@@ -2237,6 +2274,14 @@ body {
     font-weight: 600;
     color: var(--color-red);
     flex-shrink: 0;
+}
+
+.withdrawal-amount.positive {
+    color: var(--color-green);
+}
+
+.withdrawal-amount.warning {
+    color: var(--color-yellow);
 }
 
 /* ==========================================

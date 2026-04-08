@@ -7,16 +7,13 @@
  */
 function renderTaskCard(task, kidId, data, onToggle, onEdit) {
     const today = new Date();
-    const days = Storage.getLastNDays(25); // Show last 25 days (reduced from 28 for better fit)
+    const days = Storage.getLastNDays(25);
 
     const card = document.createElement('div');
     card.className = 'task-card';
     card.dataset.taskId = task.id;
 
-    // Check if completed today
     const completedToday = Storage.isTaskCompleted(data, kidId, task.id, today);
-
-    // Get dim color for incomplete dots
     const dimColor = getDimColor(task.color);
 
     card.innerHTML = `
@@ -28,7 +25,7 @@ function renderTaskCard(task, kidId, data, onToggle, onEdit) {
                 <div class="task-name">${escapeHtml(task.name)}</div>
                 <div class="task-points">${task.points} point${task.points !== 1 ? 's' : ''}${!task.bonusOnly && task.penalty != null && task.penalty !== 1 ? ' · <span class="penalty-badge">-' + task.penalty + ' penalty</span>' : ''}${task.bonusOnly ? ' <span class="bonus-badge">⭐ Bonus</span>' : ''}</div>
             </div>
-            <button class="task-toggle ${completedToday ? 'completed' : ''}" 
+            <button class="task-toggle ${completedToday ? 'completed' : ''}"
                     style="${completedToday ? `border-color: ${task.color}; background: ${dimColor};` : ''}"
                     data-task-id="${task.id}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="${completedToday ? task.color : 'transparent'}" stroke-width="3">
@@ -59,14 +56,12 @@ function renderTaskCard(task, kidId, data, onToggle, onEdit) {
         </div>
     `;
 
-    // Toggle button click
     const toggleBtn = card.querySelector('.task-toggle');
     toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         onToggle(task.id);
     });
 
-    // Card click for edit
     card.addEventListener('click', () => {
         onEdit(task);
     });
@@ -124,13 +119,51 @@ function renderEmptyState() {
     return div;
 }
 
+function renderBankActivityItem(item, kid) {
+    const dateObj = new Date(item.date);
+    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const baseAmount = item.originalAmount != null ? item.originalAmount : (item.amount || 0);
+    let title = kid.name;
+    let meta = dateStr;
+    let amountText = `$${baseAmount.toFixed(2)}`;
+    let amountClass = '';
+
+    if (item.type === 'payout') {
+        title += item.note ? ' - ' + escapeHtml(item.note) : '';
+        meta = `Payout - ${dateStr}`;
+        amountText = `-$${item.amount.toFixed(2)}`;
+    } else if (item.type === 'cash') {
+        title += item.note ? ' - ' + escapeHtml(item.note) : '';
+        meta = `Cash added - ${dateStr}`;
+        amountText = `+$${item.amount.toFixed(2)}`;
+        amountClass = 'positive';
+    } else {
+        title += item.note ? ' - ' + escapeHtml(item.note) : '';
+        meta = item.currentBalance > 0
+            ? `Loan - ${dateStr} - due $${item.currentBalance.toFixed(2)}`
+            : `Loan - ${dateStr} - cleared`;
+        amountText = `+$${baseAmount.toFixed(2)}`;
+        amountClass = 'warning';
+    }
+
+    return `
+        <div class="withdrawal-item">
+            <img src="${kid.avatar}" alt="${kid.name}" class="withdrawal-avatar">
+            <div class="withdrawal-info">
+                <div class="withdrawal-name">${title}</div>
+                <div class="withdrawal-date">${meta}</div>
+            </div>
+            <div class="withdrawal-amount ${amountClass}">${amountText}</div>
+        </div>
+    `;
+}
+
 /**
  * Render dashboard view (without leaderboard, with recent adjustments)
  */
 function renderDashboard(data, container) {
     const leaderboard = Storage.getLeaderboard(data);
 
-    // Filter adjustments to last 4 days only
     const fourDaysAgo = new Date();
     fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
     fourDaysAgo.setHours(0, 0, 0, 0);
@@ -141,24 +174,28 @@ function renderDashboard(data, container) {
         return adjDate >= fourDaysAgo;
     });
 
-    // Build recent adjustments HTML
     let adjustmentsHtml = '';
     if (recentAdjustments.length > 0) {
         adjustmentsHtml = `
             <div class="dashboard-adjustments">
-                <h3>📝 Recent Point Adjustments</h3>
+                <h3>Recent Point Adjustments</h3>
                 <div class="adjustments-list">
                     ${recentAdjustments.map(adj => {
             const kid = data.kids[adj.kidId];
             const dateObj = new Date(adj.date);
-            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const dateStr = dateObj.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
             const sign = adj.type === 'bonus' ? '+' : '-';
             return `
                             <div class="adjustment-item">
                                 <img src="${kid.avatar}" alt="${kid.name}" class="adjustment-avatar">
                                 <div class="adjustment-info">
                                     <div class="adjustment-reason">${escapeHtml(adj.reason)}</div>
-                                    <div class="adjustment-meta">${kid.name} • ${dateStr}</div>
+                                    <div class="adjustment-meta">${kid.name} - ${dateStr}</div>
                                 </div>
                                 <div class="adjustment-amount ${adj.type}">${sign}${adj.amount}</div>
                             </div>
@@ -169,65 +206,66 @@ function renderDashboard(data, container) {
         `;
     }
 
-    // Build Bank section HTML
     const kids = ['oliver', 'miles', 'zander'];
+    const recentBankActivity = [
+        ...Storage.getWithdrawals(data, null, 5).map(item => ({
+            ...item,
+            type: 'payout'
+        })),
+        ...Storage.getCashDeposits(data, null, 5).map(item => ({
+            ...item,
+            type: 'cash'
+        })),
+        ...Storage.getLoans(data, null, 5, true).map(item => ({
+            ...item,
+            type: 'loan'
+        }))
+    ]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 6);
 
-    // Get all recent withdrawals (across all kids, last 5)
-    const recentWithdrawals = Storage.getWithdrawals(data, null, 5);
-
-    let withdrawalHistoryHtml = '';
-    if (recentWithdrawals.length > 0) {
-        withdrawalHistoryHtml = `
+    let bankActivityHtml = '';
+    if (recentBankActivity.length > 0) {
+        bankActivityHtml = `
             <div class="withdrawal-history">
-                <h4>Recent Payouts</h4>
-                ${recentWithdrawals.map(w => {
-            const kid = data.kids[w.kidId];
-            const dateObj = new Date(w.date);
-            const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            return `
-                        <div class="withdrawal-item">
-                            <img src="${kid.avatar}" alt="${kid.name}" class="withdrawal-avatar">
-                            <div class="withdrawal-info">
-                                <div class="withdrawal-name">${kid.name}${w.note ? ' — ' + escapeHtml(w.note) : ''}</div>
-                                <div class="withdrawal-date">${dateStr}</div>
-                            </div>
-                            <div class="withdrawal-amount">-$${w.amount.toFixed(2)}</div>
-                        </div>
-                    `;
-        }).join('')}
+                <h4>Recent Bank Activity</h4>
+                ${recentBankActivity.map(item => renderBankActivityItem(item, data.kids[item.kidId])).join('')}
             </div>
         `;
     }
 
     const bankSectionHtml = `
         <div class="bank-section">
-            <h3 class="bank-title">🐷 Bank</h3>
+            <h3 class="bank-title">Bank</h3>
             <div class="bank-grid">
                 ${kids.map(kidId => {
         const kid = data.kids[kidId];
         const totalBanked = Storage.getTotalBanked(data, kidId);
         const totalWithdrawn = Storage.getTotalWithdrawn(data, kidId);
-        const balance = totalBanked;
+        const totalCashAdded = Storage.getTotalCashAdded(data, kidId);
+        const outstandingLoan = Storage.getOutstandingLoanTotal(data, kidId);
         const lastWeekMoney = Storage.getLastWeekEarnings(data, kidId);
         return `
                         <div class="bank-card">
                             <img src="${kid.avatar}" alt="${kid.name}" class="bank-avatar">
                             <div class="bank-name">${kid.name}</div>
-                            <div class="bank-balance">$${balance.toFixed(2)}</div>
+                            <div class="bank-balance">$${totalBanked.toFixed(2)}</div>
+                            <div class="bank-detail ${outstandingLoan > 0 ? 'bank-detail-negative' : 'bank-detail-positive'}">${outstandingLoan > 0 ? `Loan due $${outstandingLoan.toFixed(2)}` : 'Loan clear'}</div>
                             <div class="bank-detail">Last wk $${lastWeekMoney.toFixed(2)}</div>
+                            <div class="bank-detail">Cash in $${totalCashAdded.toFixed(2)}</div>
                             <div class="bank-detail">Paid out $${totalWithdrawn.toFixed(2)}</div>
                         </div>
                     `;
     }).join('')}
             </div>
-            ${withdrawalHistoryHtml}
+            ${bankActivityHtml}
         </div>
     `;
 
     container.innerHTML = `
         <div class="dashboard">
             <div class="dashboard-summary">
-                <h3>📊 This Week's Summary</h3>
+                <h3>This Week's Summary</h3>
                 <div class="summary-cards">
                     ${leaderboard.map(kid => {
         const weeklyBonus = Storage.getWeeklyBonusPoints(data, kid.id);
@@ -244,9 +282,9 @@ function renderDashboard(data, container) {
     }).join('')}
                 </div>
             </div>
-            
+
             ${bankSectionHtml}
-            
+
             ${adjustmentsHtml}
         </div>
     `;
@@ -265,13 +303,11 @@ function getProgressColor(percentage) {
  * Get dimmed version of a color
  */
 function getDimColor(color) {
-    // Convert hex to RGB, then darken
     const hex = color.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
 
-    // Darken by 70%
     const factor = 0.3;
     const dr = Math.round(r * factor);
     const dg = Math.round(g * factor);
@@ -304,7 +340,7 @@ function updateNavMoney(data) {
 }
 
 /**
- * Update summary bar - shows WEEKLY points (bonus adds to both earned AND possible)
+ * Update summary bar - shows weekly points
  */
 function updateSummaryBar(data, kidId) {
     const weekStart = data.settings.weekStart || Storage.getWeekStart(new Date()).toISOString();
@@ -312,7 +348,6 @@ function updateSummaryBar(data, kidId) {
     const bonusPoints = Storage.getWeeklyBonusPoints(data, kidId);
     const money = Storage.calculateWeeklyMoney(data, kidId);
 
-    // Bonus points add to BOTH earned AND possible
     const totalEarned = points.earned + bonusPoints;
     const totalPossible = points.possible + bonusPoints;
 
@@ -331,7 +366,6 @@ function updateWeekInfo() {
     }
 }
 
-// Export functions
 window.Components = {
     renderTaskCard,
     renderDayHeaders,
@@ -349,7 +383,6 @@ window.Components = {
  * Show celebration animation
  */
 function showCelebration(type = 'perfect', message = 'Perfect Day!') {
-    // Create overlay
     const overlay = document.createElement('div');
     overlay.className = 'celebration-overlay';
 
@@ -370,7 +403,6 @@ function showCelebration(type = 'perfect', message = 'Perfect Day!') {
 
     document.body.appendChild(overlay);
 
-    // Create confetti
     const confettiContainer = overlay.querySelector('.confetti-container');
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500'];
 
@@ -383,11 +415,8 @@ function showCelebration(type = 'perfect', message = 'Perfect Day!') {
         confettiContainer.appendChild(confetti);
     }
 
-    // Auto-remove after 3 seconds
     setTimeout(() => {
         overlay.classList.add('fade-out');
         setTimeout(() => overlay.remove(), 500);
     }, 2500);
 }
-
-

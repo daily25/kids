@@ -3,6 +3,7 @@
  */
 
 const STORAGE_KEY = 'kidsTasksData';
+const DAILY_LOAN_INTEREST_RATE = 0.10;
 
 // Default data structure
 const defaultData = {
@@ -24,6 +25,8 @@ const defaultData = {
     completions: {}, // Format: { 'kidId_taskId_YYYY-MM-DD': true }
     badges: {}, // Format: { 'kidId_badgeType_date': true }
     withdrawals: [], // Format: [{ id, kidId, amount, note, date }]
+    cashDeposits: [], // Format: [{ id, kidId, amount, note, date }]
+    loans: [], // Format: [{ id, kidId, originalAmount, outstandingAmount, note, date, lastInterestDate, dailyInterestRate, status, payments[] }]
     weeklyReviews: {} // Format: { 'YYYY-MM-DD': { weekStart, savedAt, kids: [...] } }
 };
 
@@ -128,6 +131,24 @@ function migrateData(data) {
     if (data.pointAdjustments) {
         data.pointAdjustments.forEach(adj => {
             if (adj.kidId === 'olive') adj.kidId = 'oliver';
+        });
+    }
+    if (data.withdrawals) {
+        data.withdrawals.forEach(withdrawal => {
+            if (withdrawal.kidId === 'olive') withdrawal.kidId = 'oliver';
+        });
+    }
+    if (data.cashDeposits) {
+        data.cashDeposits.forEach(deposit => {
+            if (deposit.kidId === 'olive') deposit.kidId = 'oliver';
+        });
+    }
+    if (data.loans) {
+        data.loans.forEach(loan => {
+            if (loan.kidId === 'olive') loan.kidId = 'oliver';
+            if (loan.payments && !Array.isArray(loan.payments)) {
+                loan.payments = Object.values(loan.payments);
+            }
         });
     }
     return data;
@@ -242,6 +263,75 @@ function formatDate(date) {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+}
+
+function roundMoney(amount) {
+    return Math.round((Number(amount) || 0) * 100) / 100;
+}
+
+function getDateAtStartOfDay(date) {
+    let normalizedDate = date;
+
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        normalizedDate = `${date}T00:00:00`;
+    }
+
+    const d = new Date(normalizedDate);
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+function getDaysBetweenDates(fromDate, toDate) {
+    const start = getDateAtStartOfDay(fromDate);
+    const end = getDateAtStartOfDay(toDate);
+    const diffMs = end.getTime() - start.getTime();
+
+    if (diffMs <= 0) {
+        return 0;
+    }
+
+    return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+}
+
+function getLoanBaseAmount(loan) {
+    if (loan.outstandingAmount != null) return roundMoney(loan.outstandingAmount);
+    if (loan.originalAmount != null) return roundMoney(loan.originalAmount);
+    if (loan.amount != null) return roundMoney(loan.amount);
+    return 0;
+}
+
+function calculateLoanCurrentBalance(loan, asOfDate = new Date()) {
+    if (!loan || loan.status === 'paid') {
+        return 0;
+    }
+
+    let balance = getLoanBaseAmount(loan);
+    const lastInterestDate = loan.lastInterestDate || formatDate(new Date(loan.date || new Date()));
+    const daysToAccrue = getDaysBetweenDates(lastInterestDate, asOfDate);
+    const dailyRate = loan.dailyInterestRate != null ? loan.dailyInterestRate : DAILY_LOAN_INTEREST_RATE;
+
+    for (let i = 0; i < daysToAccrue; i++) {
+        balance = roundMoney(balance * (1 + dailyRate));
+    }
+
+    return balance;
+}
+
+function applyLoanInterest(loan, asOfDate = new Date()) {
+    if (!loan || loan.status === 'paid') {
+        return false;
+    }
+
+    const asOfDateStr = formatDate(asOfDate);
+    const updatedBalance = calculateLoanCurrentBalance(loan, asOfDate);
+
+    if (updatedBalance === getLoanBaseAmount(loan) && loan.lastInterestDate === asOfDateStr) {
+        return false;
+    }
+
+    loan.outstandingAmount = updatedBalance;
+    loan.lastInterestDate = asOfDateStr;
+    return true;
 }
 
 /**
@@ -744,7 +834,7 @@ function calculateLastWeekMoney(data, kidId) {
  * Get kid's total banked money (stored in kid data)
  */
 function getTotalBanked(data, kidId) {
-    return data.kids[kidId]?.bankedMoney || 0;
+    return roundMoney(data.kids[kidId]?.bankedMoney || 0);
 }
 
 /**
@@ -755,7 +845,7 @@ function bankWeeklyEarnings(data, kidId) {
     if (!data.kids[kidId].bankedMoney) {
         data.kids[kidId].bankedMoney = 0;
     }
-    data.kids[kidId].bankedMoney += currentEarnings;
+    data.kids[kidId].bankedMoney = roundMoney(data.kids[kidId].bankedMoney + currentEarnings);
     return data.kids[kidId].bankedMoney;
 }
 
@@ -830,6 +920,7 @@ function startNewWeek(data) {
         const earnings = calculateWeeklyMoney(data, kidId);
         data.kids[kidId].lastWeekEarnings = earnings;
         bankWeeklyEarnings(data, kidId);
+        repayLoansFromBankBalance(data, kidId);
     });
 
     // Set the new week start
@@ -1025,6 +1116,11 @@ function prepareRemoteData(cloudData) {
     if (!data.weeklyReviews) data.weeklyReviews = {};
     data.pointAdjustments = fixArray(data.pointAdjustments);
     data.withdrawals = fixArray(data.withdrawals);
+    data.cashDeposits = fixArray(data.cashDeposits);
+    data.loans = fixArray(data.loans);
+    data.loans.forEach(loan => {
+        loan.payments = fixArray(loan.payments);
+    });
     if (!data.settings) data.settings = {};
     if (!data.settings.allowances) data.settings.allowances = { oliver: 50, miles: 30, zander: 20 };
     if (data.settings.allowances.oliver == null) data.settings.allowances.oliver = 50;
@@ -1094,7 +1190,7 @@ function repairDoubleBanking(data) {
  * Get last week's earned money (stored when new week started)
  */
 function getLastWeekEarnings(data, kidId) {
-    return data.kids[kidId]?.lastWeekEarnings || 0;
+    return roundMoney(data.kids[kidId]?.lastWeekEarnings || 0);
 }
 
 /**
@@ -1185,7 +1281,7 @@ function addWithdrawal(data, kidId, amount, note) {
     const withdrawal = {
         id: 'wd_' + Date.now(),
         kidId,
-        amount: parseFloat(amount),
+        amount: roundMoney(amount),
         note: note || '',
         date: new Date().toISOString()
     };
@@ -1195,7 +1291,7 @@ function addWithdrawal(data, kidId, amount, note) {
     if (!data.kids[kidId].bankedMoney) {
         data.kids[kidId].bankedMoney = 0;
     }
-    data.kids[kidId].bankedMoney = Math.max(0, data.kids[kidId].bankedMoney - withdrawal.amount);
+    data.kids[kidId].bankedMoney = roundMoney(Math.max(0, data.kids[kidId].bankedMoney - withdrawal.amount));
 
     saveData(data);
     return withdrawal;
@@ -1212,9 +1308,165 @@ function getWithdrawals(data, kidId = null, limit = 10) {
 
 function getTotalWithdrawn(data, kidId) {
     if (!data.withdrawals) return 0;
-    return data.withdrawals
+    return roundMoney(data.withdrawals
         .filter(w => w.kidId === kidId)
-        .reduce((sum, w) => sum + w.amount, 0);
+        .reduce((sum, w) => sum + w.amount, 0));
+}
+
+function addCashDeposit(data, kidId, amount, note) {
+    if (!data.cashDeposits) {
+        data.cashDeposits = [];
+    }
+
+    const deposit = {
+        id: 'cash_' + Date.now(),
+        kidId,
+        amount: roundMoney(amount),
+        note: note || '',
+        date: new Date().toISOString()
+    };
+
+    data.cashDeposits.unshift(deposit);
+
+    if (!data.kids[kidId].bankedMoney) {
+        data.kids[kidId].bankedMoney = 0;
+    }
+    data.kids[kidId].bankedMoney = roundMoney(data.kids[kidId].bankedMoney + deposit.amount);
+
+    saveData(data);
+    return deposit;
+}
+
+function getCashDeposits(data, kidId = null, limit = 10) {
+    if (!data.cashDeposits) return [];
+
+    let list = data.cashDeposits;
+    if (kidId) {
+        list = list.filter(deposit => deposit.kidId === kidId);
+    }
+
+    return list.slice(0, limit);
+}
+
+function getTotalCashAdded(data, kidId) {
+    if (!data.cashDeposits) return 0;
+
+    return roundMoney(data.cashDeposits
+        .filter(deposit => deposit.kidId === kidId)
+        .reduce((sum, deposit) => sum + deposit.amount, 0));
+}
+
+function addLoan(data, kidId, amount, note) {
+    if (!data.loans) {
+        data.loans = [];
+    }
+
+    const normalizedAmount = roundMoney(amount);
+    const now = new Date();
+    const loan = {
+        id: 'loan_' + Date.now(),
+        kidId,
+        originalAmount: normalizedAmount,
+        outstandingAmount: normalizedAmount,
+        note: note || '',
+        date: now.toISOString(),
+        lastInterestDate: formatDate(now),
+        dailyInterestRate: DAILY_LOAN_INTEREST_RATE,
+        status: 'active',
+        payments: []
+    };
+
+    data.loans.unshift(loan);
+    saveData(data);
+    return loan;
+}
+
+function getLoans(data, kidId = null, limit = 10, includePaid = false) {
+    if (!data.loans) return [];
+
+    let list = data.loans;
+    if (kidId) {
+        list = list.filter(loan => loan.kidId === kidId);
+    }
+    if (!includePaid) {
+        list = list.filter(loan => loan.status !== 'paid');
+    }
+
+    return list
+        .map(loan => ({
+            ...loan,
+            currentBalance: calculateLoanCurrentBalance(loan)
+        }))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, limit);
+}
+
+function getOutstandingLoanTotal(data, kidId) {
+    if (!data.loans) return 0;
+
+    return roundMoney(data.loans
+        .filter(loan => loan.kidId === kidId && loan.status !== 'paid')
+        .reduce((sum, loan) => sum + calculateLoanCurrentBalance(loan), 0));
+}
+
+function repayLoansFromBankBalance(data, kidId, asOfDate = new Date()) {
+    if (!data.loans || !data.kids[kidId]) {
+        return {
+            totalPaid: 0,
+            remainingBalance: getTotalBanked(data, kidId),
+            remainingLoanBalance: 0
+        };
+    }
+
+    const activeLoans = data.loans
+        .filter(loan => loan.kidId === kidId && loan.status !== 'paid')
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    activeLoans.forEach(loan => applyLoanInterest(loan, asOfDate));
+
+    let availableBalance = roundMoney(data.kids[kidId].bankedMoney || 0);
+    let totalPaid = 0;
+    const paymentDate = new Date(asOfDate).toISOString();
+
+    activeLoans.forEach((loan, index) => {
+        if (availableBalance <= 0 || loan.status === 'paid') {
+            return;
+        }
+
+        const amountDue = getLoanBaseAmount(loan);
+        const paymentAmount = roundMoney(Math.min(availableBalance, amountDue));
+
+        if (paymentAmount <= 0) {
+            return;
+        }
+
+        loan.payments = Array.isArray(loan.payments) ? loan.payments : [];
+        loan.payments.push({
+            id: `lp_${Date.now()}_${index}`,
+            amount: paymentAmount,
+            date: paymentDate,
+            source: 'monday_bank'
+        });
+
+        loan.outstandingAmount = roundMoney(amountDue - paymentAmount);
+        loan.lastInterestDate = formatDate(asOfDate);
+        availableBalance = roundMoney(availableBalance - paymentAmount);
+        totalPaid = roundMoney(totalPaid + paymentAmount);
+
+        if (loan.outstandingAmount <= 0) {
+            loan.outstandingAmount = 0;
+            loan.status = 'paid';
+            loan.paidDate = paymentDate;
+        }
+    });
+
+    data.kids[kidId].bankedMoney = availableBalance;
+
+    return {
+        totalPaid,
+        remainingBalance: availableBalance,
+        remainingLoanBalance: getOutstandingLoanTotal(data, kidId)
+    };
 }
 
 /**
@@ -1278,6 +1530,13 @@ window.Storage = {
     addWithdrawal,
     getWithdrawals,
     getTotalWithdrawn,
+    addCashDeposit,
+    getCashDeposits,
+    getTotalCashAdded,
+    addLoan,
+    getLoans,
+    getOutstandingLoanTotal,
+    repayLoansFromBankBalance,
     BADGE_TYPES,
     LEVEL_THRESHOLDS,
     calculateLevel,

@@ -14,7 +14,7 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="assets/oliver.png">
     <link rel="apple-touch-icon" href="assets/oliver.png">
-    <link rel="stylesheet" href="css/styles.css?v=5">
+    <link rel="stylesheet" href="css/styles.css?v=6">
 </head>
 
 <body>
@@ -30,7 +30,7 @@
                 </svg>
             </button>
             <h1 class="app-title cursor-pointer" id="homeBtn"><span class="title-accent">Kids</span>Tasks</h1>
-            <span class="app-version">v0.67</span>
+            <span class="app-version">v0.68</span>
             <div class="header-right">
                 <button class="header-btn" id="bonusPointsBtn" aria-label="Add/Remove Points" title="Add/Remove Points">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -39,7 +39,7 @@
                         </polygon>
                     </svg>
                 </button>
-                <button class="header-btn" id="recordPayoutBtn" aria-label="Record Payout" title="Record Payout">
+                <button class="header-btn" id="recordPayoutBtn" aria-label="Bank Actions" title="Bank Actions">
                     <span class="header-btn-emoji">🐷</span>
                 </button>
                 <button class="header-btn" id="pastReviewsBtn" aria-label="Past Reviews" title="Weekly Reviews">
@@ -360,39 +360,113 @@
     <div class="modal-overlay" id="withdrawalModal">
         <div class="modal">
             <div class="modal-header">
-                <h2>🐷 Record Payout</h2>
+                <h2>🐷 Bank Actions</h2>
                 <button class="modal-close" id="withdrawalModalClose">&times;</button>
             </div>
-            <form id="withdrawalForm">
-                <div class="form-group">
-                    <label>Select Child</label>
-                    <div class="kid-selector single-select avatar-only" id="withdrawalKidSelector">
-                        <label class="kid-checkbox">
-                            <input type="radio" name="withdrawalKid" value="oliver" checked>
-                            <img src="assets/oliver.png" alt="Oliver" class="kid-checkbox-avatar">
-                        </label>
-                        <label class="kid-checkbox">
-                            <input type="radio" name="withdrawalKid" value="miles">
-                            <img src="assets/miles.png" alt="Miles" class="kid-checkbox-avatar">
-                        </label>
-                        <label class="kid-checkbox">
-                            <input type="radio" name="withdrawalKid" value="zander">
-                            <img src="assets/zander.png" alt="Zander" class="kid-checkbox-avatar">
-                        </label>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="withdrawalAmount">Amount ($)</label>
-                    <input type="number" id="withdrawalAmount" min="0.01" step="0.01" placeholder="0.00" required>
-                </div>
-                <div class="form-group">
-                    <label for="withdrawalNote">Note (optional)</label>
-                    <input type="text" id="withdrawalNote" placeholder="e.g., Bought a toy">
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="saveWithdrawalBtn">Save Payout</button>
-                </div>
-            </form>
+            <div class="bank-actions-modal">
+                <section class="bank-action-section">
+                    <h3>Record Payout</h3>
+                    <form id="withdrawalForm">
+                        <div class="form-group">
+                            <label>Select Child</label>
+                            <div class="kid-selector single-select avatar-only" id="withdrawalKidSelector">
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="withdrawalKid" value="oliver" checked>
+                                    <img src="assets/oliver.png" alt="Oliver" class="kid-checkbox-avatar">
+                                </label>
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="withdrawalKid" value="miles">
+                                    <img src="assets/miles.png" alt="Miles" class="kid-checkbox-avatar">
+                                </label>
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="withdrawalKid" value="zander">
+                                    <img src="assets/zander.png" alt="Zander" class="kid-checkbox-avatar">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="withdrawalAmount">Amount ($)</label>
+                            <input type="number" id="withdrawalAmount" min="0.01" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="withdrawalNote">Note (optional)</label>
+                            <input type="text" id="withdrawalNote" placeholder="e.g., Bought a toy">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="saveWithdrawalBtn">Save Payout</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="bank-action-section">
+                    <h3>Record Loan</h3>
+                    <p class="bank-action-hint">Loans grow by 10% each day and get auto-paid from bank money on Mondays when earnings are banked.</p>
+                    <form id="loanForm">
+                        <div class="form-group">
+                            <label>Select Child</label>
+                            <div class="kid-selector single-select avatar-only" id="loanKidSelector">
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="loanKid" value="oliver" checked>
+                                    <img src="assets/oliver.png" alt="Oliver" class="kid-checkbox-avatar">
+                                </label>
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="loanKid" value="miles">
+                                    <img src="assets/miles.png" alt="Miles" class="kid-checkbox-avatar">
+                                </label>
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="loanKid" value="zander">
+                                    <img src="assets/zander.png" alt="Zander" class="kid-checkbox-avatar">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="loanAmount">Loan Amount ($)</label>
+                            <input type="number" id="loanAmount" min="0.01" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loanNote">Note (optional)</label>
+                            <input type="text" id="loanNote" placeholder="e.g., Needed extra for a toy">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-secondary" id="saveLoanBtn">Save Loan</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="bank-action-section">
+                    <h3>Add Cash</h3>
+                    <form id="cashDepositForm">
+                        <div class="form-group">
+                            <label>Select Child</label>
+                            <div class="kid-selector single-select avatar-only" id="cashKidSelector">
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="cashKid" value="oliver" checked>
+                                    <img src="assets/oliver.png" alt="Oliver" class="kid-checkbox-avatar">
+                                </label>
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="cashKid" value="miles">
+                                    <img src="assets/miles.png" alt="Miles" class="kid-checkbox-avatar">
+                                </label>
+                                <label class="kid-checkbox">
+                                    <input type="radio" name="cashKid" value="zander">
+                                    <img src="assets/zander.png" alt="Zander" class="kid-checkbox-avatar">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="cashAmount">Cash Amount ($)</label>
+                            <input type="number" id="cashAmount" min="0.01" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cashNote">Note (optional)</label>
+                            <input type="text" id="cashNote" placeholder="e.g., Birthday money">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="saveCashBtn">Add Cash</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
         </div>
     </div>
 
@@ -418,9 +492,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script src="js/firebase.js?v=2"></script>
-    <script src="js/storage.js?v=18"></script>
-    <script src="js/components.js?v=13"></script>
-    <script src="js/app.js?v=19"></script>
+    <script src="js/storage.js?v=19"></script>
+    <script src="js/components.js?v=14"></script>
+    <script src="js/app.js?v=20"></script>
 </body>
 
 </html>
