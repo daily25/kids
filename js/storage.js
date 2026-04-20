@@ -365,12 +365,18 @@ function getLastNDays(n) {
 /**
  * Task CRUD Operations
  */
+function normalizePenaltyValue(value, fallback = 1) {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.max(0, parsed);
+}
+
 function addTask(data, kidId, task) {
     const newTask = {
         id: 'task_' + Date.now(),
         name: task.name,
         points: parseInt(task.points) || 10,
-        penalty: parseInt(task.penalty) || 1,
+        penalty: normalizePenaltyValue(task.penalty, 1),
         icon: task.icon || '📝',
         color: task.color || '#4ade80',
         activeDays: task.activeDays || [0, 1, 2, 3, 4, 5, 6], // Default to all days
@@ -386,7 +392,12 @@ function updateTask(data, kidId, taskId, updates) {
     const tasks = data.kids[kidId].tasks;
     const index = tasks.findIndex(t => t.id === taskId);
     if (index !== -1) {
-        tasks[index] = { ...tasks[index], ...updates };
+        const normalizedUpdates = { ...updates };
+        if (Object.prototype.hasOwnProperty.call(normalizedUpdates, 'penalty')) {
+            normalizedUpdates.penalty = normalizePenaltyValue(normalizedUpdates.penalty, 1);
+        }
+
+        tasks[index] = { ...tasks[index], ...normalizedUpdates };
         saveData(data);
     }
 }
@@ -1521,6 +1532,7 @@ window.Storage = {
     getWeekNumber,
     getLastNDays,
     formatDate,
+    normalizePenaltyValue,
     startNewWeek,
     addPointsAdjustment,
     getPointsAdjustments,

@@ -299,6 +299,32 @@ body {
     color: var(--text-secondary);
 }
 
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.task-edit-btn {
+    min-width: 56px;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+}
+
+.task-edit-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
 .task-toggle {
     width: 44px;
     height: 44px;
@@ -317,6 +343,11 @@ body {
     border-color: var(--text-secondary);
 }
 
+.task-toggle:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .task-toggle.completed {
     border-color: var(--color-green);
     background: var(--color-green-dim);
@@ -330,6 +361,10 @@ body {
     width: 24px;
     height: 24px;
     color: transparent;
+}
+
+.task-card-inactive {
+    opacity: 0.86;
 }
 
 /* Dot Matrix Grid */
@@ -2012,6 +2047,22 @@ body {
 .penalty-badge {
     display: inline-block;
     background: linear-gradient(135deg, #f87171, #ef4444);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    vertical-align: middle;
+    letter-spacing: 0.3px;
+}
+
+.penalty-badge-neutral {
+    background: linear-gradient(135deg, #64748b, #475569);
+}
+
+.task-status-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #334155, #1e293b);
     color: #fff;
     font-size: 0.65rem;
     font-weight: 700;

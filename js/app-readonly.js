@@ -309,6 +309,17 @@ function openDayViewModal(date) {
     });
 
     content.innerHTML = html;
+    content.querySelectorAll('.day-task-item').forEach(item => {
+        const kidId = item.dataset.kid;
+        const taskId = item.dataset.task;
+        const task = appData.kids[kidId]?.tasks?.find(t => t.id === taskId);
+        if (!task) return;
+
+        const pointsEl = item.querySelector('.day-task-points');
+        if (pointsEl) {
+            pointsEl.innerHTML = Components.formatTaskPointsLine(task);
+        }
+    });
     dayViewModal.classList.add('active');
 }
 
@@ -464,6 +475,11 @@ function renderTasks() {
                 </div>
             </div>
         `;
+
+        const pointsEl = card.querySelector('.task-points');
+        if (pointsEl) {
+            pointsEl.innerHTML = Components.formatTaskPointsLine(task);
+        }
 
         taskList.appendChild(card);
     });

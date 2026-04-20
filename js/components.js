@@ -5,13 +5,17 @@
 /**
  * Render task card with dot matrix
  */
-function renderTaskCard(task, kidId, data, onToggle, onEdit) {
+function renderTaskCard(task, kidId, data, onToggle, onEdit, options = {}) {
     const today = new Date();
     const days = Storage.getLastNDays(25);
+    const isActiveToday = options.isActiveToday !== false;
 
     const card = document.createElement('div');
     card.className = 'task-card';
     card.dataset.taskId = task.id;
+    if (!isActiveToday) {
+        card.classList.add('task-card-inactive');
+    }
 
     const completedToday = Storage.isTaskCompleted(data, kidId, task.id, today);
     const dimColor = getDimColor(task.color);
@@ -56,11 +60,37 @@ function renderTaskCard(task, kidId, data, onToggle, onEdit) {
         </div>
     `;
 
+    card.querySelector('.task-points').innerHTML = formatTaskPointsLine(task, { isActiveToday });
+
     const toggleBtn = card.querySelector('.task-toggle');
-    toggleBtn.addEventListener('click', (e) => {
+    if (!isActiveToday) {
+        toggleBtn.disabled = true;
+        toggleBtn.title = 'Not scheduled today';
+    }
+
+    const taskHeader = card.querySelector('.task-header');
+    const taskActions = document.createElement('div');
+    taskActions.className = 'task-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'task-edit-btn';
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        onToggle(task.id);
+        onEdit(task);
     });
+
+    taskHeader.replaceChild(taskActions, toggleBtn);
+    taskActions.appendChild(editBtn);
+    taskActions.appendChild(toggleBtn);
+
+    if (isActiveToday) {
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            onToggle(task.id);
+        });
+    }
 
     card.addEventListener('click', () => {
         onEdit(task);
@@ -326,6 +356,28 @@ function escapeHtml(text) {
 }
 
 /**
+ * Format a task's points and task-state badges for display.
+ */
+function formatTaskPointsLine(task, options = {}) {
+    const badges = [];
+    const penalty = task.penalty != null ? Number(task.penalty) : null;
+
+    if (task.bonusOnly) {
+        badges.push('<span class="bonus-badge">Bonus</span>');
+    } else if (penalty === 0) {
+        badges.push('<span class="penalty-badge penalty-badge-neutral">No penalty</span>');
+    } else if (penalty != null && penalty !== 1) {
+        badges.push(`<span class="penalty-badge">-${penalty} penalty</span>`);
+    }
+
+    if (options.isActiveToday === false) {
+        badges.push('<span class="task-status-badge">Not today</span>');
+    }
+
+    return `${task.points} point${task.points !== 1 ? 's' : ''}${badges.length ? ` &middot; ${badges.join(' ')}` : ''}`;
+}
+
+/**
  * Update navigation money displays
  */
 function updateNavMoney(data) {
@@ -376,6 +428,7 @@ window.Components = {
     updateWeekInfo,
     getDimColor,
     getProgressColor,
+    formatTaskPointsLine,
     showCelebration
 };
 

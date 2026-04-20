@@ -353,17 +353,11 @@ function renderTaskList() {
     const kid = appData.kids[currentKid];
     const today = new Date();
     const todayDayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+    const tasks = Array.isArray(kid.tasks) ? kid.tasks : [];
 
     taskList.innerHTML = '';
 
-    // Filter tasks to only show ones active today
-    const activeTasks = kid.tasks.filter(task => {
-        const activeDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6]; // Default all days
-        const isActive = activeDays.includes(todayDayOfWeek);
-        return isActive;
-    });
-
-    if (activeTasks.length === 0) {
+    if (tasks.length === 0) {
         const emptyState = Components.renderEmptyState();
         taskList.appendChild(emptyState);
 
@@ -372,13 +366,17 @@ function renderTaskList() {
         return;
     }
 
-    activeTasks.forEach((task, index) => {
+    // Show every task so parents can still edit or delete tasks that are not scheduled today.
+    tasks.forEach((task, index) => {
+        const activeDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
+        const isActiveToday = activeDays.includes(todayDayOfWeek);
         const card = Components.renderTaskCard(
             task,
             currentKid,
             appData,
             handleToggleTask,
-            openEditTaskModal
+            openEditTaskModal,
+            { isActiveToday }
         );
 
         // Add reorder buttons
@@ -388,7 +386,7 @@ function renderTaskList() {
             <button class="task-reorder-btn" data-task-id="${task.id}" data-direction="up" ${index === 0 ? 'disabled' : ''} title="Move up">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
             </button>
-            <button class="task-reorder-btn" data-task-id="${task.id}" data-direction="down" ${index === activeTasks.length - 1 ? 'disabled' : ''} title="Move down">
+            <button class="task-reorder-btn" data-task-id="${task.id}" data-direction="down" ${index === tasks.length - 1 ? 'disabled' : ''} title="Move down">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
         `;
@@ -542,7 +540,7 @@ function handleTaskSubmit(e) {
 
     const name = document.getElementById('taskName').value.trim();
     const points = parseInt(document.getElementById('taskPoints').value) || 1;
-    const penalty = parseInt(document.getElementById('taskPenalty').value) || 1;
+    const penalty = Storage.normalizePenaltyValue(document.getElementById('taskPenalty').value, 1);
     const icon = document.querySelector('.icon-option.selected')?.dataset.icon || '📝';
     const color = document.querySelector('.color-option.selected')?.dataset.color || '#4ade80';
 
