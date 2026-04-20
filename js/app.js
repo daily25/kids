@@ -353,7 +353,7 @@ function renderTaskList() {
     const kid = appData.kids[currentKid];
     const today = new Date();
     const todayDayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
-    const tasks = Array.isArray(kid.tasks) ? kid.tasks : [];
+    const tasks = Array.isArray(kid.tasks) ? kid.tasks.filter(task => !task.deletedAt) : [];
 
     taskList.innerHTML = '';
 
@@ -368,8 +368,7 @@ function renderTaskList() {
 
     // Show every task so parents can still edit or delete tasks that are not scheduled today.
     tasks.forEach((task, index) => {
-        const activeDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
-        const isActiveToday = activeDays.includes(todayDayOfWeek);
+        const isActiveToday = Storage.isTaskActiveOnDate(task, today, appData, currentKid);
         const card = Components.renderTaskCard(
             task,
             currentKid,
@@ -565,7 +564,7 @@ function handleTaskSubmit(e) {
 
         ['oliver', 'miles', 'zander'].forEach(kidId => {
             const kid = appData.kids[kidId];
-            const matchingTask = kid.tasks.find(t => t.name === originalName);
+            const matchingTask = kid.tasks.find(t => t.name === originalName && !t.deletedAt);
             if (matchingTask) {
                 Storage.updateTask(appData, kidId, matchingTask.id, updates);
             }
@@ -593,18 +592,18 @@ function handleTaskSubmit(e) {
 }
 
 /**
- * Handle delete task - deletes from ALL kids who have this task
+ * Handle delete task - retires it from ALL kids while preserving history
  */
 function handleDeleteTask() {
     if (!editingTask) return;
 
-    if (confirm(`⚠️ DELETE "${editingTask.name}"?\n\nThis will remove the task from ALL children (Oliver, Miles & Zander) and delete all completion history.\n\nThis cannot be undone.`)) {
+    if (confirm(`⚠️ DELETE "${editingTask.name}"?\n\nThis will remove the task from ALL children (Oliver, Miles & Zander) going forward.\n\nPast completion history will be kept.`)) {
         const taskName = editingTask.name;
 
         // Delete from all kids who have a task with this name
         ['oliver', 'miles', 'zander'].forEach(kidId => {
             const kid = appData.kids[kidId];
-            const matchingTask = kid.tasks.find(t => t.name === taskName);
+            const matchingTask = kid.tasks.find(t => t.name === taskName && !t.deletedAt);
             if (matchingTask) {
                 Storage.deleteTask(appData, kidId, matchingTask.id);
             }
@@ -633,6 +632,7 @@ function openSettingsModal() {
         const kid = appData.kids[kidId];
         if (kid && kid.tasks && Array.isArray(kid.tasks)) {
             kid.tasks.forEach(task => {
+                if (task.deletedAt) return;
                 // Use task name as key since IDs may differ across devices
                 if (task.name && !allTasks.has(task.name)) {
                     allTasks.set(task.name, task);
@@ -969,11 +969,7 @@ function openDayViewModal(date) {
         const kid = appData.kids[kidId];
 
         // Filter tasks active on this day
-        const dayOfWeek = date.getDay();
-        const activeTasks = kid.tasks.filter(task => {
-            const activeDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
-            return activeDays.includes(dayOfWeek);
-        });
+        const activeTasks = kid.tasks.filter(task => Storage.isTaskActiveOnDate(task, date, appData, kidId));
 
         if (activeTasks.length === 0) return;
 

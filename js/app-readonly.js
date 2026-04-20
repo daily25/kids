@@ -264,11 +264,7 @@ function openDayViewModal(date) {
         const kid = appData.kids[kidId];
         if (!kid || !kid.tasks) return;
 
-        const dayOfWeek = date.getDay();
-        const activeTasks = kid.tasks.filter(task => {
-            const activeDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
-            return activeDays.includes(dayOfWeek);
-        });
+        const activeTasks = kid.tasks.filter(task => Storage.isTaskActiveOnDate(task, date, appData, kidId));
 
         if (activeTasks.length === 0) return;
 
@@ -425,7 +421,7 @@ function renderTasks() {
     }
 
     // Get tasks active on the selected day
-    const dayTasks = kid.tasks.filter(task => task.activeDays && task.activeDays.includes(dayOfWeek));
+    const dayTasks = kid.tasks.filter(task => Storage.isTaskActiveOnDate(task, viewDate, appData, currentKid));
 
     if (dayTasks.length === 0) {
         taskList.innerHTML = `

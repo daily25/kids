@@ -403,13 +403,13 @@ function updateTask(data, kidId, taskId, updates) {
 }
 
 function deleteTask(data, kidId, taskId) {
-    data.kids[kidId].tasks = data.kids[kidId].tasks.filter(t => t.id !== taskId);
-    // Clean up completions for this task
-    Object.keys(data.completions).forEach(key => {
-        if (key.includes(taskId)) {
-            delete data.completions[key];
-        }
-    });
+    const task = data.kids[kidId].tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Soft-delete the task so future schedules ignore it, while past completions stay intact.
+    task.deletedAt = new Date().toISOString();
+
+    checkAndAwardBadges(data, kidId, new Date());
     saveData(data);
 }
 
@@ -443,11 +443,58 @@ function toggleTaskCompletion(data, kidId, taskId, date) {
     return !!data.completions[key];
 }
 
+function getTaskBoundaryDate(isoString) {
+    if (!isoString) return null;
+    const date = new Date(isoString);
+    date.setHours(0, 0, 0, 0);
+    return date;
+}
+
+function getTaskPenaltyEndDate(task, endDate) {
+    const deletedDate = getTaskBoundaryDate(task.deletedAt);
+    if (!deletedDate) return new Date(endDate);
+
+    const penaltyEnd = new Date(deletedDate);
+    penaltyEnd.setDate(penaltyEnd.getDate() - 1);
+    return penaltyEnd < endDate ? penaltyEnd : new Date(endDate);
+}
+
 // Function to safely check if a task is active on a date
-function isTaskActiveOnDate(task, date) {
-    const day = date.getDay();
-    const activeDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
-    return activeDays.includes(day);
+function isTaskActiveOnDate(task, date, data, kidId) {
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+
+    const createdDate = getTaskBoundaryDate(task.createdAt);
+    if (createdDate && checkDate < createdDate) {
+        return false;
+    }
+
+    const deletedDate = getTaskBoundaryDate(task.deletedAt);
+    if (deletedDate) {
+        const checkDateStr = formatDate(checkDate);
+        const deletedDateStr = formatDate(deletedDate);
+
+        if (checkDateStr > deletedDateStr) {
+            return false;
+        }
+
+        // If a task was retired on this date, only keep it in history when it was
+        // actually completed before retirement.
+        if (checkDateStr === deletedDateStr) {
+            return !!(data && kidId && isTaskCompleted(data, kidId, task.id, checkDate));
+        }
+    }
+
+    const day = checkDate.getDay();
+    if (task.activeDays) {
+        return task.activeDays.includes(day);
+    }
+
+    if (task.weekdaysOnly) {
+        return day !== 0 && day !== 6;
+    }
+
+    return true;
 }
 
 // Function to check if all ACTIVE non-bonus tasks for a date are completed
@@ -456,7 +503,7 @@ function isPerfectDay(data, kidId, date) {
     if (tasks.length === 0) return false;
 
     // Exclude bonus-only tasks from perfect day check
-    const activeTasks = tasks.filter(task => isTaskActiveOnDate(task, date) && !task.bonusOnly);
+    const activeTasks = tasks.filter(task => isTaskActiveOnDate(task, date, data, kidId) && !task.bonusOnly);
     if (activeTasks.length === 0) return false;
 
     return activeTasks.every(task => isTaskCompleted(data, kidId, task.id, date));
@@ -528,8 +575,11 @@ function getLifetimePoints(data, kidId) {
             createdDate.setHours(0, 0, 0, 0);
             if (createdDate > yesterday) return; // Created today, no penalties yet
 
+            const penaltyEndDate = getTaskPenaltyEndDate(task, yesterday);
+            if (penaltyEndDate < createdDate) return;
+
             const taskActiveDays = task.activeDays || [0, 1, 2, 3, 4, 5, 6];
-            const activeDayCount = countActiveDaysInRange(createdDate, yesterday, taskActiveDays);
+            const activeDayCount = countActiveDaysInRange(createdDate, penaltyEndDate, taskActiveDays);
             const completedCount = pastCompletions[task.id] || 0;
             total -= Math.max(0, activeDayCount - completedCount);
         }
@@ -712,18 +762,7 @@ function calculateDayPoints(data, kidId, date) {
     let possible = 0;
 
     tasks.forEach(task => {
-        // Check if task is active on this day
-        // Support both new activeDays array and legacy weekdaysOnly
-        let isActiveToday = true;
-        if (task.activeDays) {
-            isActiveToday = task.activeDays.includes(dayOfWeek);
-        } else if (task.weekdaysOnly) {
-            // Legacy support: weekdaysOnly means Mon-Fri (1-5)
-            const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-            isActiveToday = !isWeekend;
-        }
-
-        if (!isActiveToday) {
+        if (!isTaskActiveOnDate(task, checkDate, data, kidId)) {
             return;
         }
 
@@ -1055,7 +1094,7 @@ function generateWeeklyReview(data, weekStartOverride) {
 
             weekDates.forEach(date => {
                 if (date > today) return;
-                if (!isTaskActiveOnDate(task, date)) return;
+                if (!isTaskActiveOnDate(task, date, data, kidId)) return;
                 activeDays++;
                 if (isTaskCompleted(data, kidId, task.id, date)) {
                     completedDays++;
@@ -1263,10 +1302,17 @@ function getWeeklyBonusPoints(data, kidId) {
 
 function reorderTasks(data, kidId, taskId, direction) {
     const tasks = data.kids[kidId].tasks;
-    const index = tasks.findIndex(t => t.id === taskId);
-    if (index === -1) return;
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= tasks.length) return;
+    const visibleIndexes = tasks
+        .map((task, index) => (!task.deletedAt ? index : -1))
+        .filter(index => index !== -1);
+    const visibleIndex = visibleIndexes.findIndex(index => tasks[index].id === taskId);
+    if (visibleIndex === -1) return;
+
+    const newVisibleIndex = direction === 'up' ? visibleIndex - 1 : visibleIndex + 1;
+    if (newVisibleIndex < 0 || newVisibleIndex >= visibleIndexes.length) return;
+
+    const index = visibleIndexes[visibleIndex];
+    const newIndex = visibleIndexes[newVisibleIndex];
     [tasks[index], tasks[newIndex]] = [tasks[newIndex], tasks[index]];
     saveData(data);
 }
@@ -1515,6 +1561,7 @@ window.Storage = {
     addTask,
     updateTask,
     deleteTask,
+    isTaskActiveOnDate,
     isTaskCompleted,
     toggleTaskCompletion,
     calculateDayPoints,
