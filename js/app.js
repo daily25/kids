@@ -457,7 +457,7 @@ function openTaskModal() {
     document.getElementById('taskName').value = '';
     document.getElementById('taskPoints').value = '1';
     document.getElementById('taskPenalty').value = '1';
-    document.getElementById('deleteTaskBtn').style.display = 'none';
+    document.getElementById('deleteTaskBtn').classList.add('hidden');
     document.getElementById('kidSelectorGroup').style.display = 'block';
 
     // Reset selections
@@ -496,7 +496,7 @@ function openEditTaskModal(task) {
     document.getElementById('taskName').value = task.name;
     document.getElementById('taskPoints').value = task.points;
     document.getElementById('taskPenalty').value = task.penalty != null ? task.penalty : 1;
-    document.getElementById('deleteTaskBtn').style.display = 'block';
+    document.getElementById('deleteTaskBtn').classList.remove('hidden');
     document.getElementById('kidSelectorGroup').style.display = 'none'; // Hide kid selector when editing
 
     // Select correct icon
@@ -766,9 +766,9 @@ function handleSoundTaskChange() {
     const taskName = selectEl.value;
 
     if (taskName && appData.settings.taskSounds?.[taskName]) {
-        removeBtn.style.display = 'block';
+        removeBtn.classList.remove('hidden');
     } else {
-        removeBtn.style.display = 'none';
+        removeBtn.classList.add('hidden');
     }
 }
 
