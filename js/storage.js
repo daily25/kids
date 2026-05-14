@@ -3,7 +3,6 @@
  */
 
 const STORAGE_KEY = 'kidsTasksData';
-const DAILY_LOAN_INTEREST_RATE = 0.10;
 
 // Default data structure
 const defaultData = {
@@ -26,7 +25,7 @@ const defaultData = {
     badges: {}, // Format: { 'kidId_badgeType_date': true }
     withdrawals: [], // Format: [{ id, kidId, amount, note, date }]
     cashDeposits: [], // Format: [{ id, kidId, amount, note, date }]
-    loans: [], // Format: [{ id, kidId, originalAmount, outstandingAmount, note, date, lastInterestDate, dailyInterestRate, status, payments[] }]
+    loans: [], // Format: [{ id, kidId, originalAmount, outstandingAmount, note, date, status, payments[] }]
     weeklyReviews: {} // Format: { 'YYYY-MM-DD': { weekStart, savedAt, kids: [...] } }
 };
 
@@ -149,6 +148,7 @@ function migrateData(data) {
             if (loan.payments && !Array.isArray(loan.payments)) {
                 loan.payments = Object.values(loan.payments);
             }
+            normalizeLoanBalance(loan);
         });
     }
     return data;
@@ -269,69 +269,52 @@ function roundMoney(amount) {
     return Math.round((Number(amount) || 0) * 100) / 100;
 }
 
-function getDateAtStartOfDay(date) {
-    let normalizedDate = date;
-
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        normalizedDate = `${date}T00:00:00`;
-    }
-
-    const d = new Date(normalizedDate);
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
-function getDaysBetweenDates(fromDate, toDate) {
-    const start = getDateAtStartOfDay(fromDate);
-    const end = getDateAtStartOfDay(toDate);
-    const diffMs = end.getTime() - start.getTime();
-
-    if (diffMs <= 0) {
-        return 0;
-    }
-
-    return Math.floor(diffMs / (24 * 60 * 60 * 1000));
-}
-
-function getLoanBaseAmount(loan) {
-    if (loan.outstandingAmount != null) return roundMoney(loan.outstandingAmount);
+function getLoanOriginalAmount(loan) {
     if (loan.originalAmount != null) return roundMoney(loan.originalAmount);
     if (loan.amount != null) return roundMoney(loan.amount);
+    if (loan.outstandingAmount != null) return roundMoney(loan.outstandingAmount);
     return 0;
 }
 
-function calculateLoanCurrentBalance(loan, asOfDate = new Date()) {
+function getLoanPaymentTotal(loan) {
+    const payments = Array.isArray(loan.payments) ? loan.payments : [];
+    return roundMoney(payments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0));
+}
+
+function calculateLoanCurrentBalance(loan) {
     if (!loan || loan.status === 'paid') {
         return 0;
     }
 
-    let balance = getLoanBaseAmount(loan);
-    const lastInterestDate = loan.lastInterestDate || formatDate(new Date(loan.date || new Date()));
-    const daysToAccrue = getDaysBetweenDates(lastInterestDate, asOfDate);
-    const dailyRate = loan.dailyInterestRate != null ? loan.dailyInterestRate : DAILY_LOAN_INTEREST_RATE;
-
-    for (let i = 0; i < daysToAccrue; i++) {
-        balance = roundMoney(balance * (1 + dailyRate));
-    }
-
-    return balance;
+    const balance = getLoanOriginalAmount(loan) - getLoanPaymentTotal(loan);
+    return roundMoney(Math.max(0, balance));
 }
 
-function applyLoanInterest(loan, asOfDate = new Date()) {
-    if (!loan || loan.status === 'paid') {
-        return false;
+function normalizeLoanBalance(loan) {
+    if (!loan) {
+        return;
     }
 
-    const asOfDateStr = formatDate(asOfDate);
-    const updatedBalance = calculateLoanCurrentBalance(loan, asOfDate);
-
-    if (updatedBalance === getLoanBaseAmount(loan) && loan.lastInterestDate === asOfDateStr) {
-        return false;
+    loan.payments = Array.isArray(loan.payments) ? loan.payments : [];
+    if (loan.originalAmount == null) {
+        loan.originalAmount = getLoanOriginalAmount(loan);
     }
+    delete loan.dailyInterestRate;
+    delete loan.lastInterestDate;
 
-    loan.outstandingAmount = updatedBalance;
-    loan.lastInterestDate = asOfDateStr;
-    return true;
+    const currentBalance = calculateLoanCurrentBalance(loan);
+    loan.outstandingAmount = currentBalance;
+
+    if (currentBalance <= 0) {
+        loan.status = 'paid';
+        if (!loan.paidDate) {
+            loan.paidDate = loan.payments.length > 0
+                ? loan.payments[loan.payments.length - 1].date
+                : loan.date;
+        }
+    } else if (!loan.status || loan.status === 'paid') {
+        loan.status = 'active';
+    }
 }
 
 /**
@@ -1170,6 +1153,7 @@ function prepareRemoteData(cloudData) {
     data.loans = fixArray(data.loans);
     data.loans.forEach(loan => {
         loan.payments = fixArray(loan.payments);
+        normalizeLoanBalance(loan);
     });
     if (!data.settings) data.settings = {};
     if (!data.settings.allowances) data.settings.allowances = { oliver: 50, miles: 30, zander: 20 };
@@ -1427,8 +1411,6 @@ function addLoan(data, kidId, amount, note) {
         outstandingAmount: normalizedAmount,
         note: note || '',
         date: now.toISOString(),
-        lastInterestDate: formatDate(now),
-        dailyInterestRate: DAILY_LOAN_INTEREST_RATE,
         status: 'active',
         payments: []
     };
@@ -1479,8 +1461,6 @@ function repayLoansFromBankBalance(data, kidId, asOfDate = new Date()) {
         .filter(loan => loan.kidId === kidId && loan.status !== 'paid')
         .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    activeLoans.forEach(loan => applyLoanInterest(loan, asOfDate));
-
     let availableBalance = roundMoney(data.kids[kidId].bankedMoney || 0);
     let totalPaid = 0;
     const paymentDate = new Date(asOfDate).toISOString();
@@ -1490,7 +1470,7 @@ function repayLoansFromBankBalance(data, kidId, asOfDate = new Date()) {
             return;
         }
 
-        const amountDue = getLoanBaseAmount(loan);
+        const amountDue = calculateLoanCurrentBalance(loan);
         const paymentAmount = roundMoney(Math.min(availableBalance, amountDue));
 
         if (paymentAmount <= 0) {
@@ -1506,7 +1486,6 @@ function repayLoansFromBankBalance(data, kidId, asOfDate = new Date()) {
         });
 
         loan.outstandingAmount = roundMoney(amountDue - paymentAmount);
-        loan.lastInterestDate = formatDate(asOfDate);
         availableBalance = roundMoney(availableBalance - paymentAmount);
         totalPaid = roundMoney(totalPaid + paymentAmount);
 
